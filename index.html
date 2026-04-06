@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>의대 합격 통합 매니저 (ADHD Pro)</title>
+    <title>의대 합격 통합 매니저 (Final Pro)</title>
     
-    <!-- PWA 및 모바일 최적화 설정 (경로 최적화) -->
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,68 +12,67 @@
     <meta name="apple-mobile-web-app-title" content="의대매니저">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2936/2936735.png">
     
-    <!-- 외부 라이브러리 로드 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-        body { font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; background-color: #020617; color: #f1f5f9; }
+        body { font-family: 'Pretendard', sans-serif; background-color: #020617; color: #f1f5f9; -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
         .row-animate { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .progress-ring { transition: stroke-dashoffset 0.35s; transform: rotate(-90deg); transform-origin: 50% 50%; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 20px; }
-        .slot-active { background-color: #4f46e5 !important; color: white !important; }
+        .slot-active { background-color: #4f46e5 !important; color: white !important; box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4); }
         .confetti { position: absolute; pointer-events: none; animation: fall 3s linear forwards; z-index: 100; }
         @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
     </style>
 </head>
 <body class="min-h-screen pb-24">
 
-    <!-- 초기 로딩 화면 -->
+    <!-- 로딩 및 구글 로그인 오버레이 -->
     <div id="authOverlay" class="fixed inset-0 bg-slate-950 z-[100] flex flex-col items-center justify-center gap-4 text-center">
         <div class="w-12 h-12 border-4 border-slate-800 border-t-indigo-500 rounded-full animate-spin"></div>
-        <p class="text-indigo-400 font-black animate-pulse">클라우드 서버 동기화 중...</p>
+        <p id="loadingText" class="text-indigo-400 font-black animate-pulse">데이터베이스 연결 중...</p>
+        <button id="loginBtn" onclick="loginWithGoogle()" class="hidden mt-4 bg-white text-slate-900 px-6 py-3 rounded-2xl font-black text-sm shadow-xl transition-transform active:scale-95 flex items-center gap-2">
+            <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            구글 계정으로 로그인
+        </button>
     </div>
 
     <!-- 상단 네비게이션 -->
     <nav class="fixed top-0 w-full bg-slate-900/80 backdrop-blur-xl border-b border-slate-800 z-40 px-6 py-4 flex justify-between items-center">
         <div class="flex items-center gap-3">
             <div id="statusDot" class="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span id="syncStatus" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">System Online</span>
+            <span id="syncStatus" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Connected</span>
         </div>
-        <div id="medicationAlert" class="hidden text-[9px] font-black bg-indigo-600 text-white px-3 py-1 rounded-full animate-bounce">
-            💊 약효 피크 타임!
+        <!-- 💡 복구됨: 약효 피크 알림 -->
+        <div id="medicationAlert" class="hidden text-[10px] font-black bg-indigo-600 text-white px-3 py-1 rounded-full animate-bounce shadow-[0_0_15px_rgba(79,70,229,0.5)]">
+            💊 약효 피크 타임! 최고 난도 과제 몰입
         </div>
         <div class="flex items-center gap-4">
-            <button onclick="scrollToInventory()" class="text-slate-400 hover:text-amber-400 transition-colors">
-                <i data-lucide="backpack" class="w-5 h-5"></i>
-            </button>
-            <button onclick="openSettings()" class="text-slate-400 hover:text-white transition-colors">
-                <i data-lucide="settings" class="w-5 h-5"></i>
-            </button>
+            <button onclick="scrollToInventory()" class="text-slate-400 hover:text-amber-400 transition-colors"><i data-lucide="backpack" class="w-5 h-5"></i></button>
+            <button onclick="openSettings()" class="text-slate-400 hover:text-white transition-colors"><i data-lucide="settings" class="w-5 h-5"></i></button>
         </div>
     </nav>
 
     <main class="max-w-5xl mx-auto pt-24 px-4 sm:px-6">
-        <!-- 핵심 지표 (경험치/레벨) -->
+        <!-- 대시보드 (진행률 및 레벨) -->
         <header class="mb-10 text-center relative max-w-md mx-auto">
             <div class="flex justify-center mb-6">
                 <div class="relative inline-flex items-center justify-center">
                     <svg class="w-40 h-40">
                         <circle class="text-slate-900" stroke-width="8" stroke="currentColor" fill="transparent" r="74" cx="80" cy="80"/>
+                        <!-- 💡 복구됨: 진행률 원형 게이지 연동 -->
                         <circle id="mainProgressCircle" class="text-indigo-500 progress-ring" stroke-width="8" stroke-dasharray="464.7" stroke-dashoffset="464.7" stroke-linecap="round" stroke="currentColor" fill="transparent" r="74" cx="80" cy="80"/>
                     </svg>
                     <div class="absolute flex flex-col items-center">
                         <span id="mainPercent" class="text-4xl font-black italic tracking-tighter">0%</span>
-                        <span class="text-[8px] font-bold text-slate-500 uppercase mt-1">To June Victory</span>
+                        <span class="text-[8px] font-bold text-slate-500 uppercase mt-1">To Victory</span>
                     </div>
                 </div>
             </div>
-
             <div class="bg-slate-900/50 border border-slate-800 p-5 rounded-[2.5rem] shadow-xl">
                 <div class="flex justify-between items-end mb-3">
                     <div class="flex items-center gap-2">
@@ -89,59 +87,61 @@
                         <span class="text-[9px] font-bold text-slate-500"><span id="expText">0 / 100</span> EXP</span>
                     </div>
                 </div>
-                <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-                    <div id="expBar" class="bg-gradient-to-r from-amber-300 to-indigo-500 h-full transition-all duration-1000" style="width: 0%"></div>
+                <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden shadow-inner">
+                    <div id="expBar" class="bg-gradient-to-r from-amber-300 via-amber-500 to-indigo-500 h-full transition-all duration-1000" style="width: 0%"></div>
                 </div>
             </div>
         </header>
 
-        <!-- 나침반 (월간/주간 목표) -->
-        <section class="mb-10">
-            <div class="bg-slate-900/60 border border-slate-800 rounded-[2.5rem] p-7 flex flex-col sm:flex-row gap-8 relative overflow-hidden shadow-lg">
+        <!-- 나침반 (월/주간 목표) -->
+        <section class="mb-10 w-full">
+            <div class="bg-slate-900/60 border border-slate-800 rounded-[2.5rem] p-7 flex flex-col sm:flex-row gap-8 relative overflow-hidden shadow-lg row-animate">
+                <div class="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/5 rounded-full blur-3xl"></div>
                 <div class="flex-1 w-full sm:border-r border-slate-800/50 pr-0 sm:pr-6 pb-6 sm:pb-0 border-b sm:border-b-0">
-                    <h3 class="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2 mb-4"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> <span id="monthTitleLabel">이번 달</span> 목표</h3>
-                    <div id="monthlyGoalDisplay" class="space-y-3.5 max-h-48 overflow-y-auto custom-scrollbar"></div>
+                    <h3 class="text-[10px] font-black text-indigo-400 uppercase flex items-center gap-2 mb-4"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> <span id="monthTitleLabel">이번 달</span> 목표 (The Map)</h3>
+                    <div id="monthlyGoalDisplay" class="space-y-3.5 max-h-48 overflow-y-auto custom-scrollbar pr-2"></div>
                 </div>
-                <div class="flex-1 w-full pl-0 sm:pl-4">
-                    <h3 class="text-[10px] font-black text-amber-400 uppercase tracking-widest flex items-center gap-2 mb-4"><i data-lucide="target" class="w-3.5 h-3.5"></i> <span id="weekTitleLabel">이번 주</span> 미션</h3>
-                    <div id="weeklyGoalDisplay" class="space-y-3.5 max-h-48 overflow-y-auto custom-scrollbar"></div>
+                <div class="flex-1 w-full pl-0 sm:pl-4 z-10">
+                    <h3 class="text-[10px] font-black text-amber-400 uppercase flex items-center gap-2 mb-4"><i data-lucide="target" class="w-3.5 h-3.5"></i> <span id="weekTitleLabel">이번 주</span> 미션 (The Compass)</h3>
+                    <div id="weeklyGoalDisplay" class="space-y-3.5 max-h-48 overflow-y-auto custom-scrollbar pr-2"></div>
                 </div>
             </div>
         </section>
 
-        <!-- 메인 콘텐츠 영역 -->
+        <!-- 슬롯 및 인벤토리 -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
-            <!-- 일간 슬롯 -->
             <div class="lg:col-span-5 space-y-6">
-                <!-- 누적 복습 배너 -->
-                <div id="reviewBanner" class="hidden bg-rose-600 rounded-[2rem] p-5 shadow-lg row-animate">
+                <!-- 💡 복구됨: 누적 복습 알림 배너 -->
+                <div id="reviewBanner" class="hidden bg-gradient-to-r from-rose-600 to-pink-600 rounded-[2rem] p-5 shadow-[0_0_20px_rgba(225,29,72,0.3)] row-animate">
                     <div class="flex items-center gap-3 mb-4 text-white">
                         <i data-lucide="bell-ring" class="w-5 h-5 animate-bounce"></i>
-                        <h4 class="text-sm font-black italic">Cumulative Reviews!</h4>
+                        <h4 class="text-sm font-black italic">Overdue Cumulative Reviews!</h4>
                     </div>
-                    <div id="reviewList" class="space-y-3"></div>
+                    <div id="reviewList" class="space-y-3 max-h-48 overflow-y-auto custom-scrollbar pr-2"></div>
                 </div>
 
-                <div id="slotNav" class="flex gap-2 p-1.5 bg-slate-900 rounded-[2rem] border border-slate-800 mb-6">
-                    <button onclick="setSlot('morning')" id="tab-morning" class="flex-1 py-3.5 rounded-[1.5rem] text-[10px] font-black transition-all slot-active">오전 아웃풋</button>
-                    <button onclick="setSlot('afternoon')" id="tab-afternoon" class="flex-1 py-3.5 rounded-[1.5rem] text-[10px] font-black transition-all text-slate-500">오후 인풋</button>
-                    <button onclick="setSlot('evening')" id="tab-evening" class="flex-1 py-3.5 rounded-[1.5rem] text-[10px] font-black transition-all text-slate-500">저녁 복습</button>
-                </div>
-                <div id="slotContent" class="row-animate min-h-[350px]"></div>
+                <section id="slotSection">
+                    <div class="flex gap-2 p-1.5 bg-slate-900 rounded-[2rem] border border-slate-800 mb-6">
+                        <button onclick="setSlot('morning')" id="tab-morning" class="flex-1 py-3.5 rounded-[1.5rem] text-[10px] font-black transition-all slot-active">오전 아웃풋</button>
+                        <button onclick="setSlot('afternoon')" id="tab-afternoon" class="flex-1 py-3.5 rounded-[1.5rem] text-[10px] font-black transition-all text-slate-500">오후 인풋</button>
+                        <button onclick="setSlot('evening')" id="tab-evening" class="flex-1 py-3.5 rounded-[1.5rem] text-[10px] font-black transition-all text-slate-500">저녁 복습</button>
+                    </div>
+                    <div id="slotContent" class="row-animate min-h-[350px]"></div>
+                </section>
             </div>
 
             <!-- 교재 인벤토리 -->
             <div class="lg:col-span-7">
-                <section id="inventorySection" class="bg-slate-900/40 rounded-[2.5rem] p-7 border border-slate-800 h-full">
+                <section id="inventorySection" class="bg-slate-900/40 rounded-[2.5rem] p-7 border border-slate-800 h-fit">
                     <div class="flex justify-between items-center mb-8">
                         <h2 class="text-xl font-black text-slate-100 flex items-center gap-3">🎒 교재 인벤토리</h2>
                         <div class="flex gap-2">
-                            <!-- OCR 버튼 -->
-                            <label class="bg-slate-800 text-slate-400 p-2.5 rounded-xl cursor-pointer hover:text-white transition-colors flex items-center gap-2">
-                                <i data-lucide="camera" class="w-4 h-4"></i><span class="text-xs font-bold hidden sm:inline">사진 추출</span>
+                            <!-- 💡 복구됨: OCR 사진 추출 -->
+                            <label class="bg-slate-800 hover:bg-slate-700 text-slate-400 px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-2">
+                                <i data-lucide="camera" class="w-4 h-4"></i> <span class="hidden sm:inline">사진 추출</span>
                                 <input type="file" accept="image/*" class="hidden" onchange="handleOcr(event)">
                             </label>
-                            <button onclick="openTextbookModal()" class="bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-95">+ 교재 등록</button>
+                            <button onclick="openTextbookModal()" class="text-xs bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg active:scale-95">+ 교재 등록</button>
                         </div>
                     </div>
                     <div id="textbookList" class="grid grid-cols-1 sm:grid-cols-2 gap-5"></div>
@@ -149,111 +149,113 @@
             </div>
         </div>
 
-        <!-- 하단 데이터 로그 -->
-        <section class="bg-slate-900/40 rounded-[3rem] border border-slate-800 mt-16 overflow-hidden">
-            <div class="p-8 border-b border-slate-800 flex justify-between items-center bg-slate-900/60">
-                <h2 class="text-xl font-black text-slate-200">📊 학습 데이터 로그</h2>
-                <input type="text" id="searchInput" oninput="debouncedRenderInventory()" placeholder="검색..." class="p-3 bg-slate-800 border border-slate-700 rounded-2xl text-xs font-bold text-slate-200 outline-none w-48 focus:ring-2 focus:ring-indigo-500">
+        <!-- 하단 학습 로그 -->
+        <section class="bg-slate-900/40 rounded-[3rem] border border-slate-800 mt-16 overflow-hidden shadow-2xl">
+            <div class="p-8 border-b border-slate-800 flex justify-between items-center flex-wrap gap-4 bg-slate-900/60">
+                <h2 class="text-xl font-black text-slate-200">📊 학습 데이터 인벤토리</h2>
+                <input type="text" id="searchInput" oninput="debouncedRenderInventory()" placeholder="기록 검색..." class="p-3.5 bg-slate-800 border border-slate-700 rounded-2xl text-xs font-bold text-slate-200 outline-none w-full sm:w-64 focus:ring-2 focus:ring-indigo-500 transition-all">
             </div>
             <div id="inventoryContainer" class="divide-y divide-slate-800/50 max-h-[600px] overflow-y-auto custom-scrollbar"></div>
         </section>
     </main>
 
-    <!-- 모달 영역 생략 없이 모두 포함 -->
-    <!-- [MODAL] 설정 -->
-    <div id="settingsModal" class="fixed inset-0 z-50 modal-bg flex items-center justify-center p-6 hidden backdrop-blur-md bg-slate-950/80">
-        <div class="bg-slate-900 w-full max-w-sm rounded-[3rem] p-8 border border-slate-800 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+    <!-- [MODAL] 시스템 설정 -->
+    <div id="settingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-6 hidden bg-slate-950/80 backdrop-blur-md">
+        <div class="bg-slate-900 w-full max-w-sm rounded-[3rem] p-8 border border-slate-800 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar row-animate">
             <h3 class="text-2xl font-black mb-8 text-indigo-400">⚙️ 사령탑 설정</h3>
             <div class="space-y-6 mb-10">
                 <div>
                     <label class="text-[11px] font-black text-slate-500 mb-2 block uppercase tracking-wider">6월 최종 목표 분량</label>
-                    <div class="flex gap-2">
-                        <input type="number" id="setTotalGoal" class="flex-1 bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none">
-                        <input type="text" id="setUnit" placeholder="단위" class="w-20 bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none">
-                    </div>
+                    <input type="number" id="setTotalGoal" class="w-full bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div>
                     <label class="text-[11px] font-black text-slate-500 mb-2 block uppercase tracking-wider">월간 목표 (줄바꿈 구분)</label>
-                    <textarea id="setMonthlyGoal" rows="3" class="w-full bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none"></textarea>
+                    <textarea id="setMonthlyGoal" rows="3" class="w-full bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar"></textarea>
                 </div>
                 <div>
                     <label class="text-[11px] font-black text-slate-500 mb-2 block uppercase tracking-wider">주간 미션 (줄바꿈 구분)</label>
-                    <textarea id="setWeeklyGoal" rows="3" class="w-full bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none"></textarea>
+                    <textarea id="setWeeklyGoal" rows="3" class="w-full bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar"></textarea>
+                </div>
+                <!-- 💡 복구됨: 약 복용 시간 설정 -->
+                <div>
+                    <label class="text-[11px] font-black text-slate-500 mb-2 block uppercase tracking-wider">약 복용 시간 (오전)</label>
+                    <input type="time" id="setMedTime" class="w-full bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
             </div>
-            <button onclick="saveSettings()" class="w-full py-5 bg-indigo-600 rounded-2xl font-black text-white shadow-xl">설정 저장 및 동기화</button>
-            <button onclick="closeSettings()" class="w-full py-4 text-slate-500 font-bold text-sm mt-2">닫기</button>
+            <button onclick="saveSettings()" class="w-full py-5 bg-indigo-600 rounded-2xl font-black text-white shadow-xl active:scale-95 transition-transform">설정 저장 및 동기화</button>
+            <button onclick="closeSettings()" class="w-full py-4 mt-2 text-slate-500 font-bold text-sm">닫기</button>
         </div>
     </div>
 
-    <!-- [MODAL] 아웃풋 순도 측정 -->
-    <div id="scoreModal" class="fixed inset-0 z-[60] modal-bg flex items-center justify-center p-6 hidden backdrop-blur-md bg-slate-950/80">
-        <div class="bg-slate-900 w-full max-w-sm rounded-[3rem] p-10 border border-slate-800 shadow-2xl text-center">
+    <!-- [MODAL] 💡 복구됨: 아웃풋 순도 측정 모달 -->
+    <div id="scoreModal" class="fixed inset-0 z-[60] flex items-center justify-center p-6 hidden bg-slate-950/80 backdrop-blur-md">
+        <div class="bg-slate-900 w-full max-w-sm rounded-[3rem] p-10 border border-slate-800 shadow-2xl text-center row-animate">
             <i data-lucide="gem" class="w-12 h-12 text-amber-400 mx-auto mb-6"></i>
-            <h3 class="text-xl font-black text-white mb-8">아웃풋 순도 측정</h3>
-            <p id="scoreTargetName" class="text-xs text-slate-500 mb-4 truncate"></p>
-            <input type="number" id="inputScoreValue" placeholder="0 ~ 100" class="w-full bg-slate-800 border-none rounded-3xl p-6 text-4xl font-black text-center text-amber-400 outline-none mb-10">
-            <button onclick="saveOutputScore()" class="w-full py-5 bg-amber-500 rounded-2xl font-black text-lg text-amber-950 shadow-xl active:scale-95 transition-all">점수 기록</button>
+            <h3 class="text-xl font-black mb-1 text-white">아웃풋 순도 측정</h3>
+            <p id="scoreTargetName" class="text-[10px] text-slate-500 mb-8 font-bold truncate"></p>
+            <input type="number" id="inputScoreValue" placeholder="0 ~ 100" class="w-full bg-slate-800 border-none rounded-3xl p-6 text-4xl font-black text-center text-amber-400 outline-none mb-10 focus:ring-4 focus:ring-amber-500/20">
+            <button onclick="saveOutputScore()" class="w-full py-5 bg-amber-500 rounded-2xl font-black text-lg text-amber-950 shadow-xl active:scale-95 transition-transform">점수 기록</button>
         </div>
     </div>
 
-    <!-- [MODAL] 교재 등록 -->
-    <div id="textbookModal" class="fixed inset-0 z-50 modal-bg flex items-center justify-center p-6 hidden backdrop-blur-md bg-slate-950/80">
-        <div class="bg-slate-900 rounded-[3rem] p-8 max-w-xl w-full border border-slate-800 shadow-2xl">
-            <h2 class="text-xl font-black mb-6 text-indigo-400">📖 새 교재 등록</h2>
-            <div class="space-y-4 mb-8">
-                <input type="text" id="tbTitle" placeholder="교재 제목" class="w-full p-4 bg-slate-800 rounded-2xl font-bold text-white outline-none">
+    <!-- [MODAL] 교재 등록 모달 -->
+    <div id="textbookModal" class="fixed inset-0 z-50 flex items-center justify-center p-6 hidden bg-slate-950/80 backdrop-blur-md">
+        <div class="bg-slate-900 rounded-[3rem] p-8 max-w-xl w-full border border-slate-800 shadow-2xl row-animate">
+            <h2 class="text-2xl font-black mb-8 text-indigo-400">📖 새 교재 등록</h2>
+            <div class="space-y-5 mb-8">
+                <input type="text" id="tbTitle" placeholder="교재 제목" class="w-full p-4 bg-slate-800 rounded-2xl font-bold text-white outline-none focus:ring-2 focus:ring-indigo-500">
                 <select id="tbSubject" class="w-full p-4 bg-slate-800 rounded-2xl font-bold text-sm text-white outline-none">
-                    <option value="수학">📐 수학</option><option value="국어">📚 국어</option><option value="영어">🔤 영어</option><option value="기타">기타</option>
+                    <option value="수학">📐 수학</option><option value="국어">📚 국어</option><option value="영어">🔤 영어</option><option value="과탐">🔬 과탐</option><option value="기타">기타</option>
                 </select>
-                <textarea id="tbItemsText" class="w-full h-48 p-4 bg-slate-800 rounded-2xl text-sm leading-relaxed text-white outline-none" placeholder="단원명을 한 줄에 하나씩 입력하세요."></textarea>
+                <textarea id="tbItemsText" class="w-full h-48 p-4 bg-slate-800 rounded-2xl text-sm leading-relaxed text-white outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar" placeholder="단원명을 한 줄에 하나씩 입력하세요."></textarea>
             </div>
             <div class="flex gap-4">
                 <button onclick="closeTextbookModal()" class="flex-1 py-4 bg-slate-800 rounded-2xl font-black text-sm text-slate-400">취소</button>
-                <button onclick="addTextbook()" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm shadow-lg">등록하기</button>
+                <button onclick="addTextbook()" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-transform">등록하기</button>
             </div>
         </div>
     </div>
 
-    <!-- OCR 로딩 -->
+    <!-- OCR 로딩 오버레이 -->
     <div id="ocrOverlay" class="fixed inset-0 z-[200] bg-slate-950/90 flex flex-col items-center justify-center p-10 hidden">
         <div class="w-20 h-20 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-8"></div>
         <h3 class="text-2xl font-black text-white mb-2">이미지 분석 중...</h3>
-        <p class="text-slate-500 font-bold" id="ocrProgress">0%</p>
+        <p class="text-slate-500 font-bold">오타가 있을 수 있으니 추출 후 확인해 주세요.</p>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // 파이어베이스 설정
+        // 👉 질문자님 파이어베이스 설정값 (완벽 연동)
         const firebaseConfig = {
             apiKey: "AIzaSyAxmvKC9RdRSlVpNjFZTV18XLQlvoWHyH4",
-  authDomain: "study-manager-github-54812.firebaseapp.com",
-  projectId: "study-manager-github-54812",
-  storageBucket: "study-manager-github-54812.firebasestorage.app",
-  messagingSenderId: "143994482333",
-  appId: "1:143994482333:web:9256e1f39a05ab99b26e74"
+            authDomain: "study-manager-github-54812.firebaseapp.com",
+            projectId: "study-manager-github-54812",
+            storageBucket: "study-manager-github-54812.firebasestorage.app",
+            messagingSenderId: "143994482333",
+            appId: "1:143994482333:web:9256e1f39a05ab99b26e74"
         };
-        const appId = "med-unified-manager-final-v4";
-        const REVIEW_DAYS = [1, 3, 7, 14, 30];
+        
+        // 데이터가 저장될 최상위 폴더 이름
+        const appId = "med-unified-manager-final-stable"; 
+        const REVIEW_DAYS = [1, 3, 7, 14, 30]; // 에빙하우스 복습 주기
         
         let db, auth, currentUser;
         let state = {
-            config: { totalGoal: 1000, unit: '쪽', deadline: '2026-06-01', monthlyGoals: [], weeklyGoals: [] },
+            config: { totalGoal: 1000, medTime: '08:00', monthlyGoals: [], weeklyGoals: [] },
             tasks: { morning: [], afternoon: [], evening: [] },
             logs: [],
             textbooks: [],
             activeSlot: 'morning'
         };
 
+        // 초기화 및 로그인 관리
         const init = async () => {
             const app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
-            lucide.createIcons();
-            setDateLabels();
 
             onAuthStateChanged(auth, (user) => {
                 if (user) {
@@ -261,36 +263,59 @@
                     document.getElementById('authOverlay').classList.add('hidden');
                     syncData();
                 } else {
-                    signInAnonymously(auth);
+                    document.getElementById('loadingText').innerText = "기기 간 연동을 위해 구글 로그인이 필요합니다.";
+                    document.getElementById('loginBtn').classList.remove('hidden');
                 }
             });
         };
 
-        const syncData = () => {
-            onSnapshot(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'config', 'main'), (d) => { if (d.exists()) state.config = d.data(); updateUI(); });
-            onSnapshot(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', 'daily'), (d) => { if (d.exists()) state.tasks = d.data(); updateUI(); });
-            onSnapshot(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'logs'), (sn) => { state.logs = sn.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b) => b.createdAt - a.createdAt); updateUI(); });
-            onSnapshot(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'textbooks'), (sn) => { state.textbooks = sn.docs.map(doc => ({ id: doc.id, ...doc.data() })); updateUI(); });
+        window.loginWithGoogle = async () => {
+            const provider = new GoogleAuthProvider();
+            try { 
+                document.getElementById('loadingText').innerText = "인증 중...";
+                document.getElementById('loginBtn').classList.add('hidden');
+                await signInWithPopup(auth, provider); 
+            } 
+            catch(e) { 
+                alert("로그인 에러 (팝업 차단을 해제해주세요): " + e.message); 
+                document.getElementById('loadingText').innerText = "로그인 실패";
+                document.getElementById('loginBtn').classList.remove('hidden');
+            }
         };
 
+        // 데이터 실시간 동기화 (PC ↔ 모바일)
+        const syncData = () => {
+            onSnapshot(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'config', 'main'), (d) => { if (d.exists()) state.config = { ...state.config, ...d.data() }; updateUI(); });
+            onSnapshot(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', 'daily'), (d) => { if (d.exists()) state.tasks = d.data(); updateUI(); });
+            onSnapshot(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'logs'), (sn) => { 
+                state.logs = sn.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b) => b.createdAt - a.createdAt); 
+                updateUI(); 
+            });
+            onSnapshot(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'textbooks'), (sn) => { 
+                state.textbooks = sn.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
+                updateUI(); 
+            });
+        };
+
+        // UI 통합 렌더링 함수
         const updateUI = () => {
-            renderHeader();
-            renderCompass();
-            renderActiveSlot();
-            renderTextbooks();
-            renderInventory();
+            setDateLabels(); 
+            renderHeader(); 
+            renderCompass(); 
+            renderActiveSlot(); 
+            renderTextbooks(); 
+            renderInventory(); 
+            checkReminders(); // 약효 피크 알림 체크
             lucide.createIcons();
         };
 
         const setDateLabels = () => {
-            const now = new Date();
-            const month = now.getMonth() + 1;
-            const start = new Date(now.getFullYear(), 0, 1);
+            const now = new Date(); const month = now.getMonth() + 1; const start = new Date(now.getFullYear(), 0, 1);
             const week = Math.ceil((((now - start) / 86400000) + start.getDay() + 1) / 7);
-            document.getElementById('monthTitleLabel').innerText = `${month}월`;
-            document.getElementById('weekTitleLabel').innerText = `${week}주차`;
+            document.getElementById('monthTitleLabel').innerText = `${month}월`; document.getElementById('weekTitleLabel').innerText = `${week}주차`;
         };
 
+        // 진행률 및 레벨 시스템 복구
         const renderHeader = () => {
             const total = state.config.totalGoal || 1;
             const completed = state.logs.reduce((acc, log) => acc + (log.vol || 0), 0);
@@ -299,7 +324,13 @@
             document.getElementById('mainProgressCircle').style.strokeDashoffset = 464.7 - (464.7 * (percent / 100));
 
             let exp = 0; let pc = 0; let totalP = 0;
-            state.logs.forEach(l => { exp += 10; (l.reviews || []).forEach(r => { if(r) exp += 5; }); if(l.score > 0){ totalP += l.score; pc++; } });
+            state.logs.forEach(l => { 
+                exp += 10; // 미션 완료 경험치
+                (l.reviews || []).forEach(r => { if(r) exp += 5; }); // 복습 완료 경험치
+                if(l.score > 0){ totalP += l.score; pc++; } // 순도 합산
+            });
+            
+            // 레벨업 계산 로직
             let lvl = 1, req = 100; while(exp >= req){ exp -= req; lvl++; req = Math.floor(req * 1.15); }
             document.getElementById('userLevel').innerText = lvl;
             document.getElementById('expText').innerText = `${exp} / ${req}`;
@@ -307,13 +338,14 @@
             document.getElementById('avgPurityText').innerText = `${pc ? Math.round(totalP/pc) : 0}%`;
         };
 
+        // 나침반 미션 렌더링
         const renderCompass = () => {
             const format = (t) => t.replace(/\[(.*?)\]/g, '<span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 mr-1">$1</span>');
             const renderTasks = (tasks, type) => {
-                if(!tasks || tasks.length === 0) return `<p class="text-xs text-slate-600">설정에서 미션을 추가하세요.</p>`;
+                if(!tasks || tasks.length === 0) return `<p class="text-xs text-slate-600 italic">우측 상단 톱니바퀴에서 목표를 설정하세요.</p>`;
                 return tasks.map((t, i) => `
                     <div class="flex items-start gap-2.5 group cursor-pointer" onclick="window.toggleGoalTask('${type}', ${i})">
-                        <div class="mt-0.5 flex-shrink-0 w-4 h-4 rounded border ${t.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-slate-700 bg-slate-800 text-transparent'} flex items-center justify-center transition-all">
+                        <div class="mt-0.5 flex-shrink-0 w-4 h-4 rounded border ${t.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-slate-700 bg-slate-800 text-transparent hover:border-indigo-400'} flex items-center justify-center transition-all">
                             <i data-lucide="check" class="w-3 h-3"></i>
                         </div>
                         <span class="text-xs font-bold ${t.done ? 'text-slate-600 line-through' : 'text-slate-300'} flex-1 leading-snug">${format(t.text)}</span>
@@ -325,57 +357,80 @@
 
         window.toggleGoalTask = async (type, idx) => {
             const list = type === 'monthly' ? state.config.monthlyGoals : state.config.weeklyGoals;
-            list[idx].done = !list[idx].done;
-            if(list[idx].done) celebrate();
+            list[idx].done = !list[idx].done; if(list[idx].done) celebrate();
             await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'config', 'main'), state.config);
         };
 
+        // 메인 슬롯 및 복습 배너 렌더링
         const renderActiveSlot = () => {
             const container = document.getElementById('slotContent');
-            if(new Date().getDay() === 0){
-                container.innerHTML = `<div class="bg-indigo-500/10 border-2 border-dashed border-indigo-500/30 rounded-[3rem] p-12 text-center row-animate"><i data-lucide="coffee" class="w-12 h-12 mx-auto mb-5 text-indigo-400"></i><h4 class="text-xl font-black italic">Buffer Day</h4><p class="text-xs text-slate-500">휴식과 보충의 시간입니다.</p></div>`;
-                return;
-            }
             const info = { morning: { t: '🌞 Morning Output', i: 'zap' }, afternoon: { t: '📖 Afternoon Input', i: 'book-open' }, evening: { t: '🌙 Evening Review', i: 'refresh-cw' } }[state.activeSlot];
             let html = `<div class="mb-8"><h4 class="text-sm font-black text-indigo-400 flex items-center gap-2.5 uppercase tracking-widest"><i data-lucide="${info.i}" class="w-4 h-4"></i> ${info.t}</h4></div><div class="space-y-4">`;
             
+            // 💡 복구됨: 누적 복습 계산 로직
             const overdue = [];
-            state.logs.forEach(l => { REVIEW_DAYS.forEach((d, idx) => { if(isTargetDate(l.date, d) && !(l.reviews && l.reviews[idx])) overdue.push({ id: l.id, content: l.content, dayIdx: idx, dayLabel: d }); }); });
+            state.logs.forEach(l => { 
+                REVIEW_DAYS.forEach((d, idx) => { 
+                    if(isTargetDate(l.date, d) && !(l.reviews && l.reviews[idx])) {
+                        overdue.push({ id: l.id, content: l.content, dayIdx: idx, dayLabel: d }); 
+                    }
+                }); 
+            });
             
-            if(state.activeSlot === 'evening' && overdue.length > 0){
-                html += `<div class="mb-6 space-y-3">`;
-                overdue.forEach(o => {
-                    html += `<div class="bg-rose-600/10 border border-rose-500/30 p-4 rounded-[1.5rem] flex justify-between items-center"><div class="min-w-0"><p class="text-[8px] text-rose-500 font-black uppercase mb-1">${o.dayLabel}일차 누적복습</p><h5 class="text-xs font-bold text-rose-400 truncate">${o.content}</h5></div><button onclick="window.completeReview('${o.id}', ${o.dayIdx})" class="bg-rose-500 text-white w-8 h-8 rounded-xl flex items-center justify-center shadow-lg"><i data-lucide="check" class="w-4 h-4"></i></button></div>`;
-                });
-                html += `</div><hr class="border-slate-800 mb-6">`;
+            // 리뷰 배너 표시 (오버뷰)
+            const banner = document.getElementById('reviewBanner');
+            const reviewList = document.getElementById('reviewList');
+            if(overdue.length > 0) {
+                banner.classList.remove('hidden');
+                reviewList.innerHTML = overdue.map(o => `
+                    <div class="bg-white/10 p-4 rounded-2xl flex justify-between items-center">
+                        <div class="min-w-0"><p class="text-[9px] text-white/70 font-black uppercase mb-1">${o.dayLabel}일차 복습</p><h5 class="text-xs font-bold text-white truncate">${o.content}</h5></div>
+                        <button onclick="window.completeReview('${o.id}', ${o.dayIdx})" class="bg-white text-rose-600 w-8 h-8 rounded-xl flex items-center justify-center shadow-lg active:scale-95"><i data-lucide="check" class="w-4 h-4"></i></button>
+                    </div>`).join('');
+            } else {
+                banner.classList.add('hidden');
             }
 
+            // 슬롯 미션 리스트
             const ts = state.tasks[state.activeSlot] || [];
             ts.forEach((t, i) => {
                 html += `
-                <div class="bg-slate-800/40 border border-slate-700 p-5 rounded-[2.5rem] flex justify-between items-center group">
+                <div class="bg-slate-800/40 border border-slate-700 p-5 rounded-[2.5rem] flex justify-between items-center group hover:border-slate-500 transition-colors">
                     <div class="flex-1 min-w-0 pr-4">
                         <h5 class="font-bold text-sm ${t.done ? 'line-through text-slate-600' : 'text-slate-200'} truncate">${t.title}</h5>
-                        <div class="flex items-center gap-2 mt-1.5"><span class="text-[9px] font-black text-indigo-500 uppercase tracking-tighter">${t.vol}${state.config.unit}</span></div>
+                        <div class="flex items-center gap-2 mt-1.5"><span class="text-[9px] font-black text-indigo-500 uppercase tracking-tighter">분량: ${t.vol}</span></div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="window.deleteTask('${state.activeSlot}', ${i})" class="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-800 text-slate-600 hover:text-rose-500 transition-colors"><i data-lucide="trash" class="w-4 h-4"></i></button>
-                        <button onclick="window.toggleTask('${state.activeSlot}', ${i})" class="w-12 h-12 rounded-[1.2rem] flex items-center justify-center transition-all ${t.done ? 'bg-green-500 text-white shadow-lg' : 'bg-slate-800 border border-slate-600 text-slate-600 hover:bg-slate-700'}">
+                        <button onclick="window.deleteTask('${state.activeSlot}', i})" class="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-800 text-slate-600 hover:text-rose-500 transition-colors"><i data-lucide="trash" class="w-4 h-4"></i></button>
+                        <button onclick="window.toggleTask('${state.activeSlot}', ${i})" class="w-12 h-12 rounded-[1.2rem] flex items-center justify-center transition-all ${t.done ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : 'bg-slate-800 border border-slate-600 text-slate-600 hover:bg-indigo-500 hover:text-white'}">
                             <i data-lucide="${t.done ? 'check' : 'circle'}" class="w-6 h-6"></i>
                         </button>
                     </div>
                 </div>`;
             });
+            html += `<button onclick="window.addTaskPrompt('${state.activeSlot}')" class="w-full border-2 border-dashed border-slate-800 py-7 rounded-[2.5rem] text-slate-500 text-[10px] font-black hover:bg-slate-800 hover:text-white transition-all">+ 미션 추가</button></div>`;
             container.innerHTML = html;
         };
 
+        window.addTaskPrompt = async (slot) => {
+            const title = prompt("공부할 미션 내용:"); if(!title) return;
+            const vol = parseInt(prompt("미션 분량 (숫자만 입력):", "10")) || 10;
+            state.tasks[slot].push({ title, vol, done: false, subject: '기타' });
+            await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', 'daily'), state.tasks);
+        };
+
+        // 💡 복구됨: 아웃풋 순도 측정 팝업 로직
         window.toggleTask = async (slot, idx) => {
-            const t = state.tasks[slot][idx];
+            const t = state.tasks[slot][idx]; 
             t.done = !t.done;
-            if(t.done){
-                celebrate();
-                if(slot !== 'afternoon') { window.tempTaskData = { slot, idx }; openScoreModal(t.title); }
-                else { createLog(t, 0); }
+            if(t.done){ 
+                celebrate(); 
+                if(slot !== 'afternoon') { // 오전, 저녁일 때만 순도 측정 
+                    window.tempTaskData = { slot, idx }; 
+                    openScoreModal(t.title); 
+                } else { 
+                    await createLog(t, 0); // 오후(인풋)는 순도 기록 없이 바로 저장
+                } 
             }
             await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', 'daily'), state.tasks);
         };
@@ -388,58 +443,49 @@
             });
         };
 
+        // 💡 복구됨: 교재 진행률 체크박스 로직
         window.renderTextbooks = () => {
             const list = document.getElementById('textbookList');
             list.innerHTML = state.textbooks.map(tb => `
-                <div class="p-6 rounded-[2.5rem] bg-slate-800/40 border border-slate-700 row-animate">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="min-w-0">
-                            <span class="text-[8px] font-black px-2 py-0.5 rounded bg-slate-700 text-slate-400 uppercase tracking-tighter">${tb.subject}</span>
-                            <h3 class="font-bold text-slate-200 text-sm mt-1 truncate">${tb.title}</h3>
-                        </div>
-                        <span class="text-xl font-black text-indigo-400">${tb.progress}%</span>
-                    </div>
-                    <div class="bg-slate-900 h-1 rounded-full overflow-hidden mb-5"><div class="bg-indigo-500 h-full transition-all" style="width:${tb.progress}%"></div></div>
+                <div class="p-6 rounded-[2.5rem] bg-slate-800/40 border border-slate-700 row-animate hover:border-slate-500 transition-colors">
+                    <div class="flex justify-between items-start mb-4"><div class="min-w-0"><span class="text-[8px] font-black px-2 py-0.5 rounded bg-slate-700 text-slate-300 uppercase tracking-tighter">${tb.subject}</span><h3 class="font-bold text-slate-100 text-sm mt-1.5 truncate">${tb.title}</h3></div><span class="text-xl font-black text-indigo-400">${tb.progress}%</span></div>
+                    <div class="bg-slate-900 h-1.5 rounded-full overflow-hidden mb-5"><div class="bg-indigo-500 h-full transition-all duration-500" style="width:${tb.progress}%"></div></div>
                     <details class="group"><summary class="text-[10px] font-bold text-slate-500 cursor-pointer list-none flex justify-between items-center hover:text-slate-300">목차 열기 <i data-lucide="chevron-down" class="w-3 h-3 group-open:rotate-180 transition-transform"></i></summary>
-                        <div class="mt-4 space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+                        <div class="mt-4 space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar">
                             ${tb.items.map((it, idx) => `
                             <div class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors">
                                 <label class="flex items-center gap-3 cursor-pointer flex-1">
                                     <input type="checkbox" ${it.checked ? 'checked' : ''} onclick="window.toggleTbItem('${tb.id}', ${idx})" class="w-4 h-4 accent-indigo-500 rounded bg-slate-900 border-slate-700 cursor-pointer">
                                     <span class="text-xs ${it.checked ? 'line-through text-slate-600' : 'text-slate-300 font-bold'}">${it.title}</span>
                                 </label>
-                                <button onclick="window.quickAdd('${tb.id}', ${idx})" class="p-1.5 text-slate-600 hover:text-indigo-400"><i data-lucide="plus-circle" class="w-4 h-4"></i></button>
+                                <!-- 💡 복구됨: Quick Add 버튼 -->
+                                <button onclick="window.quickAdd('${tb.id}', ${idx})" class="p-1.5 text-slate-600 hover:text-indigo-400" title="슬롯으로 보내기"><i data-lucide="plus-circle" class="w-4 h-4"></i></button>
                             </div>`).join('')}
                         </div>
-                    </details>
-                </div>`).join('');
-        };
-
-        window.quickAdd = (tbId, idx) => {
-            const tb = state.textbooks.find(t => t.id === tbId);
-            const slotRes = prompt("슬롯 선택 (1:오전, 2:오후, 3:저녁):", "1");
-            if(!slotRes) return;
-            const slotMap = { "1": "morning", "2": "afternoon", "3": "evening" };
-            const slot = slotMap[slotRes];
-            if(slot) {
-                const vol = parseInt(prompt("분량:", "10")) || 10;
-                state.tasks[slot].push({ title: `${tb.title} - ${tb.items[idx].title}`, vol, done: false, subject: tb.subject });
-                setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', 'daily'), state.tasks);
-            }
+                    </details></div>`).join('');
         };
 
         window.toggleTbItem = async (tbId, idx) => {
-            const tb = state.textbooks.find(t => t.id === tbId);
-            const items = [...tb.items];
-            items[idx].checked = !items[idx].checked;
+            const tb = state.textbooks.find(t => t.id === tbId); const items = [...tb.items]; items[idx].checked = !items[idx].checked;
             const progress = Math.round((items.filter(i => i.checked).length / items.length) * 100);
             await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'textbooks', tbId), { ...tb, items, progress });
             if(items[idx].checked) celebrate();
         };
 
+        // 💡 복구됨: 교재목차에서 미션으로 바로 쏘기 기능
+        window.quickAdd = (tbId, idx) => {
+            const tb = state.textbooks.find(t => t.id === tbId);
+            const slotRes = prompt("어느 시간대에 공부하시겠습니까? (1:오전, 2:오후, 3:저녁):", "1"); if(!slotRes) return;
+            const slotMap = { "1": "morning", "2": "afternoon", "3": "evening" }; const slot = slotMap[slotRes];
+            if(slot) {
+                const vol = parseInt(prompt("예상 분량 (숫자만 입력):", "10")) || 10;
+                state.tasks[slot].push({ title: `${tb.title} - ${tb.items[idx].title}`, vol, done: false, subject: tb.subject });
+                setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', 'daily'), state.tasks);
+            }
+        };
+
         window.renderInventory = () => {
-            const container = document.getElementById('inventoryContainer');
-            const term = document.getElementById('searchInput').value.toLowerCase();
+            const container = document.getElementById('inventoryContainer'); const term = document.getElementById('searchInput').value.toLowerCase();
             const filtered = state.logs.filter(l => l.content.toLowerCase().includes(term));
             container.innerHTML = filtered.map(l => `
                 <div class="p-6 flex flex-col gap-4 hover:bg-slate-800/30 transition-colors row-animate">
@@ -449,112 +495,91 @@
                             <h3 class="font-bold text-slate-200 text-sm truncate">${l.content}</h3>
                         </div>
                         <div class="flex items-center gap-3">
-                            ${l.score > 0 ? `<span class="text-[10px] font-black text-amber-400 flex items-center gap-1 bg-amber-400/10 px-2 py-1 rounded-lg"><i data-lucide="gem" class="w-3 h-3"></i>${l.score}%</span>` : ''}
+                            ${l.score > 0 ? `<span class="text-[10px] font-black text-amber-400 flex items-center gap-1 bg-amber-400/10 px-2 py-1 rounded-lg"><i data-lucide="gem" class="w-3 h-3"></i>순도 ${l.score}%</span>` : ''}
                             <button onclick="window.deleteLog('${l.id}')" class="text-slate-700 hover:text-rose-500 p-2 transition-colors"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
                         </div>
                     </div>
                     <div class="flex gap-2">
-                        ${REVIEW_DAYS.map((d, i) => `<button onclick="window.toggleLogReview('${l.id}', ${i})" class="flex flex-col items-center gap-1.5 group"><div class="w-8 h-8 rounded-xl border flex items-center justify-center transition-all ${l.reviews && l.reviews[i] ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-800 text-slate-600 hover:bg-slate-800'}"><i data-lucide="check" class="w-4 h-4"></i></div><span class="text-[7px] font-black ${l.reviews && l.reviews[i] ? 'text-indigo-400' : 'text-slate-700'}">${d}D</span></button>`).join('')}
+                        ${REVIEW_DAYS.map((d, i) => `<button onclick="window.toggleLogReview('${l.id}', ${i})" class="flex flex-col items-center gap-1.5 group"><div class="w-8 h-8 rounded-xl border flex items-center justify-center transition-all ${l.reviews && l.reviews[i] ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-500/20' : 'border-slate-800 text-slate-600 hover:bg-slate-800 hover:text-white'}"><i data-lucide="check" class="w-4 h-4"></i></div><span class="text-[7px] font-black ${l.reviews && l.reviews[i] ? 'text-indigo-400' : 'text-slate-700'}">${d}D</span></button>`).join('')}
                     </div>
                 </div>`).join('');
         };
 
-        window.toggleLogReview = async (id, di) => {
-            const log = state.logs.find(l => l.id === id);
-            const up = [...(log.reviews || [false,false,false,false,false])];
-            up[di] = !up[di];
-            await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'logs', id), { ...log, reviews: up });
-        };
-
+        window.toggleLogReview = async (id, di) => { const log = state.logs.find(l => l.id === id); const up = [...(log.reviews || [false,false,false,false,false])]; up[di] = !up[di]; await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'logs', id), { ...log, reviews: up }); };
         window.completeReview = async (id, di) => { const log = state.logs.find(l => l.id === id); const up = [...(log.reviews || [false,false,false,false,false])]; up[di] = true; await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'logs', id), { ...log, reviews: up }); celebrate(); };
-        window.deleteLog = async (id) => { if(confirm("기록을 삭제할까요?")) await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'logs', id)); };
+        window.deleteLog = async (id) => { if(confirm("기록을 영구 삭제할까요?")) await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'logs', id)); };
         window.deleteTask = async (slot, idx) => { state.tasks[slot].splice(idx, 1); await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', 'daily'), state.tasks); };
 
         window.setSlot = (s) => { state.activeSlot = s; updateUI(); };
+        
         window.openSettings = () => {
-            document.getElementById('setTotalGoal').value = state.config.totalGoal;
-            document.getElementById('setUnit').value = state.config.unit;
+            document.getElementById('setTotalGoal').value = state.config.totalGoal; 
+            document.getElementById('setMedTime').value = state.config.medTime || '08:00';
             document.getElementById('setMonthlyGoal').value = (state.config.monthlyGoals || []).map(t => t.text).join('\n');
             document.getElementById('setWeeklyGoal').value = (state.config.weeklyGoals || []).map(t => t.text).join('\n');
             document.getElementById('settingsModal').classList.remove('hidden');
         };
+        
         window.saveSettings = async () => {
-            state.config.totalGoal = parseInt(document.getElementById('setTotalGoal').value) || 1000;
-            state.config.unit = document.getElementById('setUnit').value || '쪽';
-            const parse = (val, old) => val.split('\n').filter(l => l.trim()).map(line => {
-                const ex = (old || []).find(t => t.text === line);
-                return ex ? ex : { text: line, done: false };
-            });
-            state.config.monthlyGoals = parse(document.getElementById('setMonthlyGoal').value, state.config.monthlyGoals);
-            state.config.weeklyGoals = parse(document.getElementById('setWeeklyGoal').value, state.config.weeklyGoals);
-            await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'config', 'main'), state.config);
-            closeSettings();
+            state.config.totalGoal = parseInt(document.getElementById('setTotalGoal').value) || 1000; 
+            state.config.medTime = document.getElementById('setMedTime').value || '08:00';
+            const p = (v, o) => v.split('\n').filter(l => l.trim()).map(line => { const e = (o || []).find(t => t.text === line); return e ? e : { text: line, done: false }; });
+            state.config.monthlyGoals = p(document.getElementById('setMonthlyGoal').value, state.config.monthlyGoals);
+            state.config.weeklyGoals = p(document.getElementById('setWeeklyGoal').value, state.config.weeklyGoals);
+            await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'config', 'main'), state.config); closeSettings();
         };
 
         window.openTextbookModal = () => document.getElementById('textbookModal').classList.remove('hidden');
         window.closeTextbookModal = () => document.getElementById('textbookModal').classList.add('hidden');
         window.addTextbook = async () => {
-            const title = document.getElementById('tbTitle').value;
-            const itemsT = document.getElementById('tbItemsText').value;
-            if(!title || !itemsT) return;
-            const items = itemsT.split('\n').filter(i => i.trim()).map(i => ({ title: i.trim(), checked: false }));
-            await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'textbooks', Date.now().toString()), { title, subject: document.getElementById('tbSubject').value, items, progress: 0 });
-            closeTextbookModal();
+            const title = document.getElementById('tbTitle').value; const itemsT = document.getElementById('tbItemsText').value;
+            if(!title || !itemsT) return; const items = itemsT.split('\n').filter(i => i.trim()).map(i => ({ title: i.trim(), checked: false }));
+            await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'textbooks', Date.now().toString()), { title, subject: document.getElementById('tbSubject').value, items, progress: 0 }); closeTextbookModal();
         };
 
+        // 💡 복구됨: 순도 점수 입력 저장
         window.saveOutputScore = async () => {
-            const val = parseInt(document.getElementById('inputScoreValue').value);
-            if(isNaN(val)) return;
-            const { slot, idx } = window.tempTaskData;
-            await createLog(state.tasks[slot][idx], val);
-            document.getElementById('scoreModal').classList.add('hidden');
+            const val = parseInt(document.getElementById('inputScoreValue').value); if(isNaN(val)) return;
+            const { slot, idx } = window.tempTaskData; await createLog(state.tasks[slot][idx], val); document.getElementById('scoreModal').classList.add('hidden');
         };
 
         const openScoreModal = (name) => { document.getElementById('scoreTargetName').innerText = name; document.getElementById('inputScoreValue').value = ''; document.getElementById('scoreModal').classList.remove('hidden'); };
         window.closeSettings = () => document.getElementById('settingsModal').classList.add('hidden');
         window.scrollToInventory = () => document.getElementById('inventorySection').scrollIntoView({ behavior: 'smooth' });
-        window.debouncedRenderInventory = () => renderInventory();
-
-        const celebrate = () => {
-            for(let i=0; i<30; i++){
-                const c = document.createElement('div');
-                c.className = 'confetti';
-                c.style.left = Math.random() * 100 + 'vw';
-                c.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 60%)`;
-                c.style.width = Math.random() * 10 + 5 + 'px'; c.style.height = c.style.width;
-                c.style.top = '-20px';
-                document.body.appendChild(c);
-                setTimeout(() => c.remove(), 3000);
-            }
+        
+        // 💡 복구됨: 약효 피크 알림 계산 로직 (4시간 지속)
+        const checkReminders = () => { 
+            const now = new Date(); 
+            const medTime = state.config.medTime || '08:00';
+            const [h, m] = medTime.split(':'); 
+            const med = new Date(); med.setHours(h, m, 0); 
+            const diff = (now - med) / 3600000; // 시간을 시간 단위로 변환
+            document.getElementById('medicationAlert').classList.toggle('hidden', !(diff >= 0 && diff <= 4)); 
         };
 
+        const celebrate = () => { for(let i=0; i<30; i++){ const c = document.createElement('div'); c.className = 'confetti'; c.style.left = Math.random() * 100 + 'vw'; c.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 60%)`; c.style.width = Math.random() * 10 + 5 + 'px'; c.style.height = c.style.width; c.style.top = '-20px'; document.body.appendChild(c); setTimeout(() => c.remove(), 3000); } };
         const isTargetDate = (b, d) => { const t = new Date(); t.setHours(0,0,0,0); const r = new Date(b); r.setDate(r.getDate() + d); r.setHours(0,0,0,0); return t.getTime() === r.getTime(); };
+        const debounce = (f, d) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => f(...a), d); }; };
+        window.debouncedRenderInventory = debounce(() => renderInventory(), 300);
 
+        // 💡 복구됨: 교재 목차 OCR 기능 최적화
         window.handleOcr = async (e) => {
-            const file = e.target.files[0]; if(!file) return;
-            const overlay = document.getElementById('ocrOverlay');
-            overlay.classList.remove('hidden');
-            try {
-                const worker = await Tesseract.createWorker('kor+eng');
-                const ret = await worker.recognize(file);
-                await worker.terminate();
+            const file = e.target.files[0]; if(!file) return; const overlay = document.getElementById('ocrOverlay'); overlay.classList.remove('hidden');
+            try { const worker = await Tesseract.createWorker('kor+eng'); const ret = await worker.recognize(file); await worker.terminate();
                 const lines = ret.data.text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-                document.getElementById('tbItemsText').value += (document.getElementById('tbItemsText').value ? '\n' : '') + lines.join('\n');
+                const currentVal = document.getElementById('tbItemsText').value;
+                const prefix = currentVal.trim() ? currentVal.trim() + '\n' : '';
+                document.getElementById('tbItemsText').value = prefix + lines.join('\n');
                 celebrate();
-            } catch (err) { alert('OCR 오류'); }
-            finally { overlay.classList.add('hidden'); }
+                alert('목차 텍스트 추출이 완료되었습니다! 오타가 있다면 살짝만 수정해 주세요.');
+            } catch (err) { alert('OCR 추출 중 오류가 발생했습니다.'); } finally { overlay.classList.add('hidden'); e.target.value = ''; }
         };
 
         init();
 
-        // 깃허브 페이지용 서비스 워커 등록 (경로 최적화)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').then(reg => {
-                    console.log('SW Registered');
-                }).catch(err => {
-                    console.log('SW Registration Failed', err);
-                });
+                navigator.serviceWorker.register('./sw.js').then(() => console.log('SW Registered')).catch(e => console.log('SW Registration Failed', e));
             });
         }
     </script>
