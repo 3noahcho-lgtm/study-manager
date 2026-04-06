@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>의대 합격 통합 매니저 (ADHD Pro)</title>
+    
+    <!-- PWA 및 모바일 최적화 설정 (경로 최적화) -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="의대매니저">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2936/2936735.png">
+    
+    <!-- 외부 라이브러리 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body { font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; background-color: #020617; color: #f1f5f9; }
+        .row-animate { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .progress-ring { transition: stroke-dashoffset 0.35s; transform: rotate(-90deg); transform-origin: 50% 50%; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 20px; }
+        .slot-active { background-color: #4f46e5 !important; color: white !important; }
+        .confetti { position: absolute; pointer-events: none; animation: fall 3s linear forwards; z-index: 100; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+    </style>
+</head>
+<body class="min-h-screen pb-24">
+
+    <!-- 초기 로딩 화면 -->
+    <div id="authOverlay" class="fixed inset-0 bg-slate-950 z-[100] flex flex-col items-center justify-center gap-4 text-center">
+        <div class="w-12 h-12 border-4 border-slate-800 border-t-indigo-500 rounded-full animate-spin"></div>
+        <p class="text-indigo-400 font-black animate-pulse">클라우드 서버 동기화 중...</p>
+    </div>
+
+    <!-- 상단 네비게이션 -->
+    <nav class="fixed top-0 w-full bg-slate-900/80 backdrop-blur-xl border-b border-slate-800 z-40 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div id="statusDot" class="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span id="syncStatus" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">System Online</span>
+        </div>
+        <div id="medicationAlert" class="hidden text-[9px] font-black bg-indigo-600 text-white px-3 py-1 rounded-full animate-bounce">
+            💊 약효 피크 타임!
+        </div>
+        <div class="flex items-center gap-4">
+            <button onclick="scrollToInventory()" class="text-slate-400 hover:text-amber-400 transition-colors">
+                <i data-lucide="backpack" class="w-5 h-5"></i>
+            </button>
+            <button onclick="openSettings()" class="text-slate-400 hover:text-white transition-colors">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main class="max-w-5xl mx-auto pt-24 px-4 sm:px-6">
+        <!-- 핵심 지표 (경험치/레벨) -->
+        <header class="mb-10 text-center relative max-w-md mx-auto">
+            <div class="flex justify-center mb-6">
+                <div class="relative inline-flex items-center justify-center">
+                    <svg class="w-40 h-40">
+                        <circle class="text-slate-900" stroke-width="8" stroke="currentColor" fill="transparent" r="74" cx="80" cy="80"/>
+                        <circle id="mainProgressCircle" class="text-indigo-500 progress-ring" stroke-width="8" stroke-dasharray="464.7" stroke-dashoffset="464.7" stroke-linecap="round" stroke="currentColor" fill="transparent" r="74" cx="80" cy="80"/>
+                    </svg>
+                    <div class="absolute flex flex-col items-center">
+                        <span id="mainPercent" class="text-4xl font-black italic tracking-tighter">0%</span>
+                        <span class="text-[8px] font-bold text-slate-500 uppercase mt-1">To June Victory</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/50 border border-slate-800 p-5 rounded-[2.5rem] shadow-xl">
+                <div class="flex justify-between items-end mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-400 text-amber-950 text-[10px] font-black px-2.5 py-1 rounded-xl">Lv.<span id="userLevel">1</span></span>
+                        <span id="userTitle" class="text-xs font-black text-slate-200">초등학교 1학년 🎒</span>
+                    </div>
+                    <div class="flex flex-col items-end gap-1.5">
+                        <div class="flex items-center gap-1.5 bg-indigo-500/10 px-2.5 py-1 rounded-xl">
+                            <span class="text-[8px] font-bold text-indigo-300">평균 순도</span>
+                            <span class="text-[10px] font-black text-amber-300" id="avgPurityText">0%</span>
+                        </div>
+                        <span class="text-[9px] font-bold text-slate-500"><span id="expText">0 / 100</span> EXP</span>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                    <div id="expBar" class="bg-gradient-to-r from-amber-300 to-indigo-500 h-full transition-all duration-1000" style="width: 0%"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 나침반 (월간/주간 목표) -->
+        <section class="mb-10">
+            <div class="bg-slate-900/60 border border-slate-800 rounded-[2.5rem] p-7 flex flex-col sm:flex-row gap-8 relative overflow-hidden shadow-lg">
+                <div class="flex-1 w-full sm:border-r border-slate-800/50 pr-0 sm:pr-6 pb-6 sm:pb-0 border-b sm:border-b-0">
+                    <h3 class="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2 mb-4"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> <span id="monthTitleLabel">이번 달</span> 목표</h3>
+                    <div id="monthlyGoalDisplay" class="space-y-3.5 max-h-48 overflow-y-auto custom-scrollbar"></div>
+                </div>
+                <div class="flex-1 w-full pl-0 sm:pl-4">
+                    <h3 class="text-[10px] font-black text-amber-400 uppercase tracking-widest flex items-center gap-2 mb-4"><i data-lucide="target" class="w-3.5 h-3.5"></i> <span id="weekTitleLabel">이번 주</span> 미션</h3>
+                    <div id="weeklyGoalDisplay" class="space-y-3.5 max-h-48 overflow-y-auto custom-scrollbar"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <!-- 일간 슬롯 -->
+            <div class="lg:col-span-5 space-y-6">
+                <!-- 누적 복습 배너 -->
+                <div id="reviewBanner" class="hidden bg-rose-600 rounded-[2rem] p-5 shadow-lg row-animate">
+                    <div class="flex items-center gap-3 mb-4 text-white">
+                        <i data-lucide="bell-ring" class="w-5 h-5 animate-bounce"></i>
+                        <h4 class="text-sm font-black italic">Cumulative Reviews!</h4>
+                    </div>
+                    <div id="reviewList" class="space-y-3"></div>
+                </div>
+
+                <div id="slotNav" class="flex gap-2 p-1.5 bg-slate-900 rounded-[2rem] border border-slate-800 mb-6">
+                    <button onclick="setSlot('morning')" id="tab-morning" class="flex-1 py-3.5 rounded-[1.5rem] text-[10px] font-black transition-all slot-active">오전 아웃풋</button>
+                    <button onclick="setSlot('afternoon')" id="tab-afternoon" class="flex-1 py-3.5 rounded-[1.5rem] text-[10px] font-black transition-all text-slate-500">오후 인풋</button>
+                    <button onclick="setSlot('evening')" id="tab-evening" class="flex-1 py-3.5 rounded-[1.5rem] text-[10px] font-black transition-all text-slate-500">저녁 복습</button>
+                </div>
+                <div id="slotContent" class="row-animate min-h-[350px]"></div>
+            </div>
+
+            <!-- 교재 인벤토리 -->
+            <div class="lg:col-span-7">
+                <section id="inventorySection" class="bg-slate-900/40 rounded-[2.5rem] p-7 border border-slate-800 h-full">
+                    <div class="flex justify-between items-center mb-8">
+                        <h2 class="text-xl font-black text-slate-100 flex items-center gap-3">🎒 교재 인벤토리</h2>
+                        <div class="flex gap-2">
+                            <!-- OCR 버튼 -->
+                            <label class="bg-slate-800 text-slate-400 p-2.5 rounded-xl cursor-pointer hover:text-white transition-colors flex items-center gap-2">
+                                <i data-lucide="camera" class="w-4 h-4"></i><span class="text-xs font-bold hidden sm:inline">사진 추출</span>
+                                <input type="file" accept="image/*" class="hidden" onchange="handleOcr(event)">
+                            </label>
+                            <button onclick="openTextbookModal()" class="bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-95">+ 교재 등록</button>
+                        </div>
+                    </div>
+                    <div id="textbookList" class="grid grid-cols-1 sm:grid-cols-2 gap-5"></div>
+                </section>
+            </div>
+        </div>
+
+        <!-- 하단 데이터 로그 -->
+        <section class="bg-slate-900/40 rounded-[3rem] border border-slate-800 mt-16 overflow-hidden">
+            <div class="p-8 border-b border-slate-800 flex justify-between items-center bg-slate-900/60">
+                <h2 class="text-xl font-black text-slate-200">📊 학습 데이터 로그</h2>
+                <input type="text" id="searchInput" oninput="debouncedRenderInventory()" placeholder="검색..." class="p-3 bg-slate-800 border border-slate-700 rounded-2xl text-xs font-bold text-slate-200 outline-none w-48 focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div id="inventoryContainer" class="divide-y divide-slate-800/50 max-h-[600px] overflow-y-auto custom-scrollbar"></div>
+        </section>
+    </main>
+
+    <!-- 모달 영역 생략 없이 모두 포함 -->
+    <!-- [MODAL] 설정 -->
+    <div id="settingsModal" class="fixed inset-0 z-50 modal-bg flex items-center justify-center p-6 hidden backdrop-blur-md bg-slate-950/80">
+        <div class="bg-slate-900 w-full max-w-sm rounded-[3rem] p-8 border border-slate-800 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <h3 class="text-2xl font-black mb-8 text-indigo-400">⚙️ 사령탑 설정</h3>
+            <div class="space-y-6 mb-10">
+                <div>
+                    <label class="text-[11px] font-black text-slate-500 mb-2 block uppercase tracking-wider">6월 최종 목표 분량</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="setTotalGoal" class="flex-1 bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none">
+                        <input type="text" id="setUnit" placeholder="단위" class="w-20 bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[11px] font-black text-slate-500 mb-2 block uppercase tracking-wider">월간 목표 (줄바꿈 구분)</label>
+                    <textarea id="setMonthlyGoal" rows="3" class="w-full bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none"></textarea>
+                </div>
+                <div>
+                    <label class="text-[11px] font-black text-slate-500 mb-2 block uppercase tracking-wider">주간 미션 (줄바꿈 구분)</label>
+                    <textarea id="setWeeklyGoal" rows="3" class="w-full bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none"></textarea>
+                </div>
+            </div>
+            <button onclick="saveSettings()" class="w-full py-5 bg-indigo-600 rounded-2xl font-black text-white shadow-xl">설정 저장 및 동기화</button>
+            <button onclick="closeSettings()" class="w-full py-4 text-slate-500 font-bold text-sm mt-2">닫기</button>
+        </div>
+    </div>
+
+    <!-- [MODAL] 아웃풋 순도 측정 -->
+    <div id="scoreModal" class="fixed inset-0 z-[60] modal-bg flex items-center justify-center p-6 hidden backdrop-blur-md bg-slate-950/80">
+        <div class="bg-slate-900 w-full max-w-sm rounded-[3rem] p-10 border border-slate-800 shadow-2xl text-center">
+            <i data-lucide="gem" class="w-12 h-12 text-amber-400 mx-auto mb-6"></i>
+            <h3 class="text-xl font-black text-white mb-8">아웃풋 순도 측정</h3>
+            <p id="scoreTargetName" class="text-xs text-slate-500 mb-4 truncate"></p>
+            <input type="number" id="inputScoreValue" placeholder="0 ~ 100" class="w-full bg-slate-800 border-none rounded-3xl p-6 text-4xl font-black text-center text-amber-400 outline-none mb-10">
+            <button onclick="saveOutputScore()" class="w-full py-5 bg-amber-500 rounded-2xl font-black text-lg text-amber-950 shadow-xl active:scale-95 transition-all">점수 기록</button>
+        </div>
+    </div>
+
+    <!-- [MODAL] 교재 등록 -->
+    <div id="textbookModal" class="fixed inset-0 z-50 modal-bg flex items-center justify-center p-6 hidden backdrop-blur-md bg-slate-950/80">
+        <div class="bg-slate-900 rounded-[3rem] p-8 max-w-xl w-full border border-slate-800 shadow-2xl">
+            <h2 class="text-xl font-black mb-6 text-indigo-400">📖 새 교재 등록</h2>
+            <div class="space-y-4 mb-8">
+                <input type="text" id="tbTitle" placeholder="교재 제목" class="w-full p-4 bg-slate-800 rounded-2xl font-bold text-white outline-none">
+                <select id="tbSubject" class="w-full p-4 bg-slate-800 rounded-2xl font-bold text-sm text-white outline-none">
+                    <option value="수학">📐 수학</option><option value="국어">📚 국어</option><option value="영어">🔤 영어</option><option value="기타">기타</option>
+                </select>
+                <textarea id="tbItemsText" class="w-full h-48 p-4 bg-slate-800 rounded-2xl text-sm leading-relaxed text-white outline-none" placeholder="단원명을 한 줄에 하나씩 입력하세요."></textarea>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="closeTextbookModal()" class="flex-1 py-4 bg-slate-800 rounded-2xl font-black text-sm text-slate-400">취소</button>
+                <button onclick="addTextbook()" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm shadow-lg">등록하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- OCR 로딩 -->
+    <div id="ocrOverlay" class="fixed inset-0 z-[200] bg-slate-950/90 flex flex-col items-center justify-center p-10 hidden">
+        <div class="w-20 h-20 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-8"></div>
+        <h3 class="text-2xl font-black text-white mb-2">이미지 분석 중...</h3>
+        <p class="text-slate-500 font-bold" id="ocrProgress">0%</p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // 파이어베이스 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyDJRhqtbdfY1VAGoXtIf7p4YbhI1fkeQt4",
+            authDomain: "study-manager-5a114.firebaseapp.com",
+            projectId: "study-manager-5a114",
+            storageBucket: "study-manager-5a114.firebasestorage.app",
+            messagingSenderId: "586896814036",
+            appId: "1:586896814036:web:c60393dafe2dce33fb3041"
+        };
+        const appId = "med-unified-manager-final-v4";
+        const REVIEW_DAYS = [1, 3, 7, 14, 30];
+        
+        let db, auth, currentUser;
+        let state = {
+            config: { totalGoal: 1000, unit: '쪽', deadline: '2026-06-01', monthlyGoals: [], weeklyGoals: [] },
+            tasks: { morning: [], afternoon: [], evening: [] },
+            logs: [],
+            textbooks: [],
+            activeSlot: 'morning'
+        };
+
+        const init = async () => {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            lucide.createIcons();
+            setDateLabels();
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    document.getElementById('authOverlay').classList.add('hidden');
+                    syncData();
+                } else {
+                    signInAnonymously(auth);
+                }
+            });
+        };
+
+        const syncData = () => {
+            onSnapshot(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'config', 'main'), (d) => { if (d.exists()) state.config = d.data(); updateUI(); });
+            onSnapshot(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', 'daily'), (d) => { if (d.exists()) state.tasks = d.data(); updateUI(); });
+            onSnapshot(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'logs'), (sn) => { state.logs = sn.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b) => b.createdAt - a.createdAt); updateUI(); });
+            onSnapshot(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'textbooks'), (sn) => { state.textbooks = sn.docs.map(doc => ({ id: doc.id, ...doc.data() })); updateUI(); });
+        };
+
+        const updateUI = () => {
+            renderHeader();
+            renderCompass();
+            renderActiveSlot();
+            renderTextbooks();
+            renderInventory();
+            lucide.createIcons();
+        };
+
+        const setDateLabels = () => {
+            const now = new Date();
+            const month = now.getMonth() + 1;
+            const start = new Date(now.getFullYear(), 0, 1);
+            const week = Math.ceil((((now - start) / 86400000) + start.getDay() + 1) / 7);
+            document.getElementById('monthTitleLabel').innerText = `${month}월`;
+            document.getElementById('weekTitleLabel').innerText = `${week}주차`;
+        };
+
+        const renderHeader = () => {
+            const total = state.config.totalGoal || 1;
+            const completed = state.logs.reduce((acc, log) => acc + (log.vol || 0), 0);
+            const percent = Math.min(100, Math.floor((completed / total) * 100));
+            document.getElementById('mainPercent').innerText = `${percent}%`;
+            document.getElementById('mainProgressCircle').style.strokeDashoffset = 464.7 - (464.7 * (percent / 100));
+
+            let exp = 0; let pc = 0; let totalP = 0;
+            state.logs.forEach(l => { exp += 10; (l.reviews || []).forEach(r => { if(r) exp += 5; }); if(l.score > 0){ totalP += l.score; pc++; } });
+            let lvl = 1, req = 100; while(exp >= req){ exp -= req; lvl++; req = Math.floor(req * 1.15); }
+            document.getElementById('userLevel').innerText = lvl;
+            document.getElementById('expText').innerText = `${exp} / ${req}`;
+            document.getElementById('expBar').style.width = `${(exp/req)*100}%`;
+            document.getElementById('avgPurityText').innerText = `${pc ? Math.round(totalP/pc) : 0}%`;
+        };
+
+        const renderCompass = () => {
+            const format = (t) => t.replace(/\[(.*?)\]/g, '<span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 mr-1">$1</span>');
+            const renderTasks = (tasks, type) => {
+                if(!tasks || tasks.length === 0) return `<p class="text-xs text-slate-600">설정에서 미션을 추가하세요.</p>`;
+                return tasks.map((t, i) => `
+                    <div class="flex items-start gap-2.5 group cursor-pointer" onclick="window.toggleGoalTask('${type}', ${i})">
+                        <div class="mt-0.5 flex-shrink-0 w-4 h-4 rounded border ${t.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-slate-700 bg-slate-800 text-transparent'} flex items-center justify-center transition-all">
+                            <i data-lucide="check" class="w-3 h-3"></i>
+                        </div>
+                        <span class="text-xs font-bold ${t.done ? 'text-slate-600 line-through' : 'text-slate-300'} flex-1 leading-snug">${format(t.text)}</span>
+                    </div>`).join('');
+            };
+            document.getElementById('monthlyGoalDisplay').innerHTML = renderTasks(state.config.monthlyGoals || [], 'monthly');
+            document.getElementById('weeklyGoalDisplay').innerHTML = renderTasks(state.config.weeklyGoals || [], 'weekly');
+        };
+
+        window.toggleGoalTask = async (type, idx) => {
+            const list = type === 'monthly' ? state.config.monthlyGoals : state.config.weeklyGoals;
+            list[idx].done = !list[idx].done;
+            if(list[idx].done) celebrate();
+            await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'config', 'main'), state.config);
+        };
+
+        const renderActiveSlot = () => {
+            const container = document.getElementById('slotContent');
+            if(new Date().getDay() === 0){
+                container.innerHTML = `<div class="bg-indigo-500/10 border-2 border-dashed border-indigo-500/30 rounded-[3rem] p-12 text-center row-animate"><i data-lucide="coffee" class="w-12 h-12 mx-auto mb-5 text-indigo-400"></i><h4 class="text-xl font-black italic">Buffer Day</h4><p class="text-xs text-slate-500">휴식과 보충의 시간입니다.</p></div>`;
+                return;
+            }
+            const info = { morning: { t: '🌞 Morning Output', i: 'zap' }, afternoon: { t: '📖 Afternoon Input', i: 'book-open' }, evening: { t: '🌙 Evening Review', i: 'refresh-cw' } }[state.activeSlot];
+            let html = `<div class="mb-8"><h4 class="text-sm font-black text-indigo-400 flex items-center gap-2.5 uppercase tracking-widest"><i data-lucide="${info.i}" class="w-4 h-4"></i> ${info.t}</h4></div><div class="space-y-4">`;
+            
+            const overdue = [];
+            state.logs.forEach(l => { REVIEW_DAYS.forEach((d, idx) => { if(isTargetDate(l.date, d) && !(l.reviews && l.reviews[idx])) overdue.push({ id: l.id, content: l.content, dayIdx: idx, dayLabel: d }); }); });
+            
+            if(state.activeSlot === 'evening' && overdue.length > 0){
+                html += `<div class="mb-6 space-y-3">`;
+                overdue.forEach(o => {
+                    html += `<div class="bg-rose-600/10 border border-rose-500/30 p-4 rounded-[1.5rem] flex justify-between items-center"><div class="min-w-0"><p class="text-[8px] text-rose-500 font-black uppercase mb-1">${o.dayLabel}일차 누적복습</p><h5 class="text-xs font-bold text-rose-400 truncate">${o.content}</h5></div><button onclick="window.completeReview('${o.id}', ${o.dayIdx})" class="bg-rose-500 text-white w-8 h-8 rounded-xl flex items-center justify-center shadow-lg"><i data-lucide="check" class="w-4 h-4"></i></button></div>`;
+                });
+                html += `</div><hr class="border-slate-800 mb-6">`;
+            }
+
+            const ts = state.tasks[state.activeSlot] || [];
+            ts.forEach((t, i) => {
+                html += `
+                <div class="bg-slate-800/40 border border-slate-700 p-5 rounded-[2.5rem] flex justify-between items-center group">
+                    <div class="flex-1 min-w-0 pr-4">
+                        <h5 class="font-bold text-sm ${t.done ? 'line-through text-slate-600' : 'text-slate-200'} truncate">${t.title}</h5>
+                        <div class="flex items-center gap-2 mt-1.5"><span class="text-[9px] font-black text-indigo-500 uppercase tracking-tighter">${t.vol}${state.config.unit}</span></div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="window.deleteTask('${state.activeSlot}', ${i})" class="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-800 text-slate-600 hover:text-rose-500 transition-colors"><i data-lucide="trash" class="w-4 h-4"></i></button>
+                        <button onclick="window.toggleTask('${state.activeSlot}', ${i})" class="w-12 h-12 rounded-[1.2rem] flex items-center justify-center transition-all ${t.done ? 'bg-green-500 text-white shadow-lg' : 'bg-slate-800 border border-slate-600 text-slate-600 hover:bg-slate-700'}">
+                            <i data-lucide="${t.done ? 'check' : 'circle'}" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        };
+
+        window.toggleTask = async (slot, idx) => {
+            const t = state.tasks[slot][idx];
+            t.done = !t.done;
+            if(t.done){
+                celebrate();
+                if(slot !== 'afternoon') { window.tempTaskData = { slot, idx }; openScoreModal(t.title); }
+                else { createLog(t, 0); }
+            }
+            await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', 'daily'), state.tasks);
+        };
+
+        const createLog = async (t, score) => {
+            const id = Date.now().toString();
+            await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'logs', id), {
+                content: t.title, subject: t.subject || '기타', date: new Date().toISOString().split('T')[0],
+                vol: t.vol, reviews: [false,false,false,false,false], score, createdAt: Date.now()
+            });
+        };
+
+        window.renderTextbooks = () => {
+            const list = document.getElementById('textbookList');
+            list.innerHTML = state.textbooks.map(tb => `
+                <div class="p-6 rounded-[2.5rem] bg-slate-800/40 border border-slate-700 row-animate">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="min-w-0">
+                            <span class="text-[8px] font-black px-2 py-0.5 rounded bg-slate-700 text-slate-400 uppercase tracking-tighter">${tb.subject}</span>
+                            <h3 class="font-bold text-slate-200 text-sm mt-1 truncate">${tb.title}</h3>
+                        </div>
+                        <span class="text-xl font-black text-indigo-400">${tb.progress}%</span>
+                    </div>
+                    <div class="bg-slate-900 h-1 rounded-full overflow-hidden mb-5"><div class="bg-indigo-500 h-full transition-all" style="width:${tb.progress}%"></div></div>
+                    <details class="group"><summary class="text-[10px] font-bold text-slate-500 cursor-pointer list-none flex justify-between items-center hover:text-slate-300">목차 열기 <i data-lucide="chevron-down" class="w-3 h-3 group-open:rotate-180 transition-transform"></i></summary>
+                        <div class="mt-4 space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+                            ${tb.items.map((it, idx) => `
+                            <div class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors">
+                                <label class="flex items-center gap-3 cursor-pointer flex-1">
+                                    <input type="checkbox" ${it.checked ? 'checked' : ''} onclick="window.toggleTbItem('${tb.id}', ${idx})" class="w-4 h-4 accent-indigo-500 rounded bg-slate-900 border-slate-700 cursor-pointer">
+                                    <span class="text-xs ${it.checked ? 'line-through text-slate-600' : 'text-slate-300 font-bold'}">${it.title}</span>
+                                </label>
+                                <button onclick="window.quickAdd('${tb.id}', ${idx})" class="p-1.5 text-slate-600 hover:text-indigo-400"><i data-lucide="plus-circle" class="w-4 h-4"></i></button>
+                            </div>`).join('')}
+                        </div>
+                    </details>
+                </div>`).join('');
+        };
+
+        window.quickAdd = (tbId, idx) => {
+            const tb = state.textbooks.find(t => t.id === tbId);
+            const slotRes = prompt("슬롯 선택 (1:오전, 2:오후, 3:저녁):", "1");
+            if(!slotRes) return;
+            const slotMap = { "1": "morning", "2": "afternoon", "3": "evening" };
+            const slot = slotMap[slotRes];
+            if(slot) {
+                const vol = parseInt(prompt("분량:", "10")) || 10;
+                state.tasks[slot].push({ title: `${tb.title} - ${tb.items[idx].title}`, vol, done: false, subject: tb.subject });
+                setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', 'daily'), state.tasks);
+            }
+        };
+
+        window.toggleTbItem = async (tbId, idx) => {
+            const tb = state.textbooks.find(t => t.id === tbId);
+            const items = [...tb.items];
+            items[idx].checked = !items[idx].checked;
+            const progress = Math.round((items.filter(i => i.checked).length / items.length) * 100);
+            await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'textbooks', tbId), { ...tb, items, progress });
+            if(items[idx].checked) celebrate();
+        };
+
+        window.renderInventory = () => {
+            const container = document.getElementById('inventoryContainer');
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = state.logs.filter(l => l.content.toLowerCase().includes(term));
+            container.innerHTML = filtered.map(l => `
+                <div class="p-6 flex flex-col gap-4 hover:bg-slate-800/30 transition-colors row-animate">
+                    <div class="flex justify-between items-start gap-4">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2 mb-1.5"><span class="text-[8px] font-black px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 uppercase tracking-tighter">${l.subject || '기타'}</span><span class="text-[10px] font-bold text-slate-600 tabular-nums">${l.date}</span></div>
+                            <h3 class="font-bold text-slate-200 text-sm truncate">${l.content}</h3>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            ${l.score > 0 ? `<span class="text-[10px] font-black text-amber-400 flex items-center gap-1 bg-amber-400/10 px-2 py-1 rounded-lg"><i data-lucide="gem" class="w-3 h-3"></i>${l.score}%</span>` : ''}
+                            <button onclick="window.deleteLog('${l.id}')" class="text-slate-700 hover:text-rose-500 p-2 transition-colors"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        ${REVIEW_DAYS.map((d, i) => `<button onclick="window.toggleLogReview('${l.id}', ${i})" class="flex flex-col items-center gap-1.5 group"><div class="w-8 h-8 rounded-xl border flex items-center justify-center transition-all ${l.reviews && l.reviews[i] ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-800 text-slate-600 hover:bg-slate-800'}"><i data-lucide="check" class="w-4 h-4"></i></div><span class="text-[7px] font-black ${l.reviews && l.reviews[i] ? 'text-indigo-400' : 'text-slate-700'}">${d}D</span></button>`).join('')}
+                    </div>
+                </div>`).join('');
+        };
+
+        window.toggleLogReview = async (id, di) => {
+            const log = state.logs.find(l => l.id === id);
+            const up = [...(log.reviews || [false,false,false,false,false])];
+            up[di] = !up[di];
+            await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'logs', id), { ...log, reviews: up });
+        };
+
+        window.completeReview = async (id, di) => { const log = state.logs.find(l => l.id === id); const up = [...(log.reviews || [false,false,false,false,false])]; up[di] = true; await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'logs', id), { ...log, reviews: up }); celebrate(); };
+        window.deleteLog = async (id) => { if(confirm("기록을 삭제할까요?")) await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'logs', id)); };
+        window.deleteTask = async (slot, idx) => { state.tasks[slot].splice(idx, 1); await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', 'daily'), state.tasks); };
+
+        window.setSlot = (s) => { state.activeSlot = s; updateUI(); };
+        window.openSettings = () => {
+            document.getElementById('setTotalGoal').value = state.config.totalGoal;
+            document.getElementById('setUnit').value = state.config.unit;
+            document.getElementById('setMonthlyGoal').value = (state.config.monthlyGoals || []).map(t => t.text).join('\n');
+            document.getElementById('setWeeklyGoal').value = (state.config.weeklyGoals || []).map(t => t.text).join('\n');
+            document.getElementById('settingsModal').classList.remove('hidden');
+        };
+        window.saveSettings = async () => {
+            state.config.totalGoal = parseInt(document.getElementById('setTotalGoal').value) || 1000;
+            state.config.unit = document.getElementById('setUnit').value || '쪽';
+            const parse = (val, old) => val.split('\n').filter(l => l.trim()).map(line => {
+                const ex = (old || []).find(t => t.text === line);
+                return ex ? ex : { text: line, done: false };
+            });
+            state.config.monthlyGoals = parse(document.getElementById('setMonthlyGoal').value, state.config.monthlyGoals);
+            state.config.weeklyGoals = parse(document.getElementById('setWeeklyGoal').value, state.config.weeklyGoals);
+            await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'config', 'main'), state.config);
+            closeSettings();
+        };
+
+        window.openTextbookModal = () => document.getElementById('textbookModal').classList.remove('hidden');
+        window.closeTextbookModal = () => document.getElementById('textbookModal').classList.add('hidden');
+        window.addTextbook = async () => {
+            const title = document.getElementById('tbTitle').value;
+            const itemsT = document.getElementById('tbItemsText').value;
+            if(!title || !itemsT) return;
+            const items = itemsT.split('\n').filter(i => i.trim()).map(i => ({ title: i.trim(), checked: false }));
+            await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'textbooks', Date.now().toString()), { title, subject: document.getElementById('tbSubject').value, items, progress: 0 });
+            closeTextbookModal();
+        };
+
+        window.saveOutputScore = async () => {
+            const val = parseInt(document.getElementById('inputScoreValue').value);
+            if(isNaN(val)) return;
+            const { slot, idx } = window.tempTaskData;
+            await createLog(state.tasks[slot][idx], val);
+            document.getElementById('scoreModal').classList.add('hidden');
+        };
+
+        const openScoreModal = (name) => { document.getElementById('scoreTargetName').innerText = name; document.getElementById('inputScoreValue').value = ''; document.getElementById('scoreModal').classList.remove('hidden'); };
+        window.closeSettings = () => document.getElementById('settingsModal').classList.add('hidden');
+        window.scrollToInventory = () => document.getElementById('inventorySection').scrollIntoView({ behavior: 'smooth' });
+        window.debouncedRenderInventory = () => renderInventory();
+
+        const celebrate = () => {
+            for(let i=0; i<30; i++){
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.left = Math.random() * 100 + 'vw';
+                c.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 60%)`;
+                c.style.width = Math.random() * 10 + 5 + 'px'; c.style.height = c.style.width;
+                c.style.top = '-20px';
+                document.body.appendChild(c);
+                setTimeout(() => c.remove(), 3000);
+            }
+        };
+
+        const isTargetDate = (b, d) => { const t = new Date(); t.setHours(0,0,0,0); const r = new Date(b); r.setDate(r.getDate() + d); r.setHours(0,0,0,0); return t.getTime() === r.getTime(); };
+
+        window.handleOcr = async (e) => {
+            const file = e.target.files[0]; if(!file) return;
+            const overlay = document.getElementById('ocrOverlay');
+            overlay.classList.remove('hidden');
+            try {
+                const worker = await Tesseract.createWorker('kor+eng');
+                const ret = await worker.recognize(file);
+                await worker.terminate();
+                const lines = ret.data.text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                document.getElementById('tbItemsText').value += (document.getElementById('tbItemsText').value ? '\n' : '') + lines.join('\n');
+                celebrate();
+            } catch (err) { alert('OCR 오류'); }
+            finally { overlay.classList.add('hidden'); }
+        };
+
+        init();
+
+        // 깃허브 페이지용 서비스 워커 등록 (경로 최적화)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(reg => {
+                    console.log('SW Registered');
+                }).catch(err => {
+                    console.log('SW Registration Failed', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
