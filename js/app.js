@@ -50,8 +50,14 @@ class App {
         });
     }
 
-    async login() {
+async login() {
         const provider = new GoogleAuthProvider();
+        
+        // 🌟 핵심 추가: 모바일에서도 무조건 구글 계정 선택 창을 강제로 띄우게 만듭니다!
+        provider.setCustomParameters({
+            prompt: 'select_account'
+        });
+
         document.getElementById('loadingText').innerText = "인증 중...";
         document.getElementById('loginBtn').classList.add('hidden');
         try { 
