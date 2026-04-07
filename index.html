@@ -1,206 +1,222 @@
-import streamlit as st
-from datetime import date
-from streamlit_gsheets import GSheetsConnection
-import pandas as pd
-
-# ==========================================
-# 1. 환경 설정 및 상수 (Config)
-# ==========================================
-# 💡 앱 이름과 버전을 분리했습니다. (로직: V4.0 / 앱 버전: v1.5)
-st.set_page_config(page_title="TQQQ 무한매수 V4.0 (계산기 v1.5)", page_icon="📈", layout="wide")
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1eLf1envTkRq9fGx2H9c_btI2Z18OqL1L71WBhXHjOTY/edit?gid=0#gid=0"
-
-# ==========================================
-# 2. 데이터 처리 모듈 (Data Layer)
-# ==========================================
-def get_conn():
-    return st.connection("gsheets", type=GSheetsConnection)
-
-def fetch_latest_status(sheet_name):
-    try:
-        df = get_conn().read(spreadsheet=SHEET_URL, worksheet=sheet_name, ttl=0)
-        return df.iloc[-1] if not df.empty else None
-    except:
-        return None
-
-def update_status(sheet_name, t_val, balance, avg_price):
-    new_data = pd.DataFrame([{"T값": t_val, "잔고": balance, "평단가": avg_price}])
-    get_conn().update(spreadsheet=SHEET_URL, worksheet=sheet_name, data=new_data)
-    st.cache_data.clear()
-
-def fetch_records(sheet_name):
-    return get_conn().read(spreadsheet=SHEET_URL, worksheet=sheet_name, ttl=0)
-
-def append_record(sheet_name, end_date, total_invested, final_profit):
-    profit_rate = f"{round((final_profit/total_invested)*100, 2)}%" if total_invested > 0 else "0%"
-    new_entry = pd.DataFrame([{
-        "종료일": str(end_date), 
-        "투입원금": total_invested, 
-        "수익금": final_profit, 
-        "수익률": profit_rate
-    }])
-    conn = get_conn()
-    existing_df = fetch_records(sheet_name)
-    updated_df = pd.concat([existing_df, new_entry], ignore_index=True)
-    conn.update(spreadsheet=SHEET_URL, worksheet=sheet_name, data=updated_df)
-    st.cache_data.clear()
-
-# ==========================================
-# 3. 비즈니스 로직 모듈 (Logic Layer)
-# ==========================================
-def calculate_orders(current_t, current_bal, current_avg):
-    if current_t == 0 or current_avg == 0:
-        return 0, 0.0, 0.0
-
-    star_pct = (20 - current_t) * 0.01
-    star_point = current_avg * (1 + star_pct)
-    buy_qty = round((current_bal / (40 - current_t) / 2) / current_avg) if current_t < 40 else 0
-    sell_price = current_avg * 1.10 if current_t < 20 else star_point
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>의대 합격 통합 매니저 (Final Pro)</title>
     
-    return buy_qty, star_point, sell_price
-
-# ==========================================
-# 4. UI 렌더링 모듈 (View Layer)
-# ==========================================
-def apply_theme(account_choice):
-    if account_choice == "진":
-        st.markdown("""
-        <style>
-            .stApp { background-color: #F8F9FA !important; }
-            [data-testid="stSidebar"] { background-color: #E9ECEF !important; }
-            .stMarkdown, .stText, h1, h2, h3, p, label, span { color: #212529 !important; }
-            div[data-baseweb="input"] > div, div[data-baseweb="select"] > div { background-color: #FFFFFF !important; }
-            input, select, textarea { color: #212529 !important; -webkit-text-fill-color: #212529 !important; }
-            div[data-testid="stAlert"] * { color: #212529 !important; }
-            .stButton > button { background-color: #FFFFFF !important; color: #212529 !important; border: 1px solid #ADB5BD !important; }
-            .stButton > button * { color: #212529 !important; }
-            button:disabled, button[disabled] { background-color: #E9ECEF !important; color: #6C757D !important; border: 1px solid #CED4DA !important; opacity: 1 !important; }
-            button:disabled *, button[disabled] * { color: #6C757D !important; }
-            [data-testid="stExpander"] details summary { background-color: #E9ECEF !important; color: #212529 !important; }
-            [data-testid="stExpander"] details summary * { color: #212529 !important; }
-        </style>
-        """, unsafe_allow_html=True)
-
-# ==========================================
-# 5. 메인 앱 실행 (App Entry Point)
-# ==========================================
-def main():
-    st.sidebar.title("👤 계좌 설정")
-    account_choice = st.sidebar.radio("운용할 계좌를 선택하세요:", ["웅", "진"])
-    apply_theme(account_choice)
-
-    suffix = "1" if account_choice == "웅" else "2"
-    status_sheet = f"내상태{suffix}"
-    record_sheet = f"기록{suffix}"
-
-    last_status = fetch_latest_status(status_sheet)
-    if last_status is not None:
-        default_t, default_bal, default_avg = float(last_status['T값']), float(last_status['잔고']), float(last_status['평단가'])
-    else:
-        default_t, default_bal, default_avg = 0.0, (10000.0 if account_choice == "진" else 4000.0), 0.0
-
-    # 💡 메인 타이틀도 명확하게 분리했습니다.
-    st.title(f"📈 TQQQ 무한매수 V4.0 (App v1.5)")
-    st.write(f"현재 **{account_choice}** 계좌 데이터를 관리하고 있습니다.")
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="의대매니저">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2936/2936735.png">
     
-    tab1, tab2 = st.tabs(["🛒 오늘의 주문 계산", "📝 사이클 종료 정산 (차트)"])
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body { font-family: 'Pretendard', sans-serif; background-color: #020617; color: #f1f5f9; -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
+        .row-animate { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .progress-ring { transition: stroke-dashoffset 0.35s; transform: rotate(-90deg); transform-origin: 50% 50%; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 20px; }
+        .slot-active { background-color: #4f46e5 !important; color: white !important; box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4); }
+        .confetti { position: absolute; pointer-events: none; animation: fall 3s linear forwards; z-index: 100; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+    </style>
+</head>
+<body class="min-h-screen pb-24">
 
-    with tab1:
-        col1, col2 = st.columns([1.5, 1])
-        with col1:
-            st.subheader("☀️ 1단계: 어제장 체결 내용 업데이트 (아침)")
-            st.caption(f"💾 현재 시트 데이터: T값 **{default_t}** / 잔금 **\${default_bal:,.2f}** / 평단 **\${default_avg:,.2f}**")
-            
-            with st.container(border=True):
-                c1, c2, c3 = st.columns(3)
-                add_t = c1.selectbox("어제 매수 체결 (T값 증가)", [0.0, 0.5, 1.0], index=0)
-                spent_dollar = c2.number_input("어제 체결 금액 차감 ($)", min_value=0.0, step=10.0, value=0.0)
-                new_avg = c3.number_input("오늘 내 평단가 ($)", value=default_avg, step=0.01)
+    <div id="authOverlay" class="fixed inset-0 bg-slate-950 z-[100] flex flex-col items-center justify-center gap-4 text-center">
+        <div class="w-12 h-12 border-4 border-slate-800 border-t-indigo-500 rounded-full animate-spin"></div>
+        <p id="loadingText" class="text-indigo-400 font-black animate-pulse">데이터베이스 연결 중...</p>
+        <button id="loginBtn" onclick="app.login()" class="hidden mt-4 bg-white text-slate-900 px-6 py-3 rounded-2xl font-black text-sm shadow-xl transition-transform active:scale-95 flex items-center gap-2">
+            <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            구글 계정으로 로그인
+        </button>
+    </div>
 
-                current_t = default_t + add_t
-                current_bal = default_bal - spent_dollar
-                current_avg = new_avg
+    <nav class="fixed top-0 w-full bg-slate-900/80 backdrop-blur-xl border-b border-slate-800 z-40 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div id="statusDot" class="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span id="syncStatus" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Connected</span>
+        </div>
+        <div id="medicationAlert" class="hidden text-[10px] font-black bg-indigo-600 text-white px-3 py-1 rounded-full animate-bounce shadow-[0_0_15px_rgba(79,70,229,0.5)]">
+            💊 약효 피크 타임! 최고 난도 과제 몰입
+        </div>
+        <div class="flex items-center gap-4">
+            <button onclick="app.scrollToInventory()" class="text-slate-400 hover:text-amber-400 transition-colors"><i data-lucide="backpack" class="w-5 h-5"></i></button>
+            <button onclick="app.openSettings()" class="text-slate-400 hover:text-white transition-colors"><i data-lucide="settings" class="w-5 h-5"></i></button>
+        </div>
+    </nav>
 
-                st.write("") 
-                if st.button(f"💾 1단계 완료: 체결 내용 시트에 저장하기", type="primary", use_container_width=True):
-                    try:
-                        update_status(status_sheet, current_t, current_bal, current_avg)
-                        st.success("✅ 구글 시트가 최신 데이터로 업데이트되었습니다!")
-                        st.rerun() 
-                    except Exception as e:
-                        st.error(f"저장 실패: {e}")
+    <main class="max-w-5xl mx-auto pt-24 px-4 sm:px-6">
+        <header class="mb-10 text-center relative max-w-md mx-auto">
+            <div class="flex justify-center mb-6">
+                <div class="relative inline-flex items-center justify-center">
+                    <svg class="w-40 h-40">
+                        <circle class="text-slate-900" stroke-width="8" stroke="currentColor" fill="transparent" r="74" cx="80" cy="80"/>
+                        <circle id="mainProgressCircle" class="text-indigo-500 progress-ring" stroke-width="8" stroke-dasharray="464.7" stroke-dashoffset="464.7" stroke-linecap="round" stroke="currentColor" fill="transparent" r="74" cx="80" cy="80"/>
+                    </svg>
+                    <div class="absolute flex flex-col items-center">
+                        <span id="mainPercent" class="text-4xl font-black italic tracking-tighter">0%</span>
+                        <span class="text-[8px] font-bold text-slate-500 uppercase mt-1">To Victory</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-slate-900/50 border border-slate-800 p-5 rounded-[2.5rem] shadow-xl">
+                <div class="flex justify-between items-end mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-400 text-amber-950 text-[10px] font-black px-2.5 py-1 rounded-xl">Lv.<span id="userLevel">1</span></span>
+                        <span id="userTitle" class="text-xs font-black text-slate-200">초등학교 1학년 🎒</span>
+                    </div>
+                    <div class="flex flex-col items-end gap-1.5">
+                        <div class="flex items-center gap-1.5 bg-indigo-500/10 px-2.5 py-1 rounded-xl">
+                            <span class="text-[8px] font-bold text-indigo-300">평균 순도</span>
+                            <span class="text-[10px] font-black text-amber-300" id="avgPurityText">0%</span>
+                        </div>
+                        <span class="text-[9px] font-bold text-slate-500"><span id="expText">0 / 100</span> EXP</span>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden shadow-inner">
+                    <div id="expBar" class="bg-gradient-to-r from-amber-300 via-amber-500 to-indigo-500 h-full transition-all duration-1000" style="width: 0%"></div>
+                </div>
+            </div>
+        </header>
 
-            st.divider()
-            
-            st.subheader("🌙 2단계: 오늘의 예약 주문 세팅 (밤)")
-            st.write(f"👉 **주문 기준 상태:** T값 **{default_t}** / 잔금 **\${default_bal:,.2f}**")
-            
-            if default_t == 0:
-                st.info("✨ 새로운 사이클의 시작입니다! 오늘은 앱 계산 없이 **하루 시드만큼 시장가 매수**를 진행하세요.")
-                st.write(f"👉 추천 매수 금액: **\${default_bal / 40:,.2f}** (총 예산의 1/40)")
-            else:
-                buy_qty, star_point, sell_price = calculate_orders(default_t, default_bal, default_avg)
-                if buy_qty > 0:
-                    st.info(f"**🟢 [매수 1] 평단 LOC:** {round(default_avg, 2)} / {buy_qty}주")
-                    st.info(f"**🟢 [매수 2] 별지점 LOC:** {round(star_point, 2)} / {buy_qty}주")
-                else:
-                    st.warning("T값이 40에 도달하여 추가 매수하지 않습니다. (매도만 진행)")
-                st.error(f"**🔴 [매도] 전량 익절/탈출 LOC:** {round(sell_price, 2)}")
+        <section class="mb-10 w-full">
+            <div class="bg-slate-900/60 border border-slate-800 rounded-[2.5rem] p-7 flex flex-col sm:flex-row gap-8 relative overflow-hidden shadow-lg row-animate">
+                <div class="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/5 rounded-full blur-3xl"></div>
+                <div class="flex-1 w-full sm:border-r border-slate-800/50 pr-0 sm:pr-6 pb-6 sm:pb-0 border-b sm:border-b-0">
+                    <h3 class="text-[10px] font-black text-indigo-400 uppercase flex items-center gap-2 mb-4"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> <span id="monthTitleLabel">이번 달</span> 목표 (The Map)</h3>
+                    <div id="monthlyGoalDisplay" class="space-y-3.5 max-h-48 overflow-y-auto custom-scrollbar pr-2"></div>
+                </div>
+                <div class="flex-1 w-full pl-0 sm:pl-4 z-10">
+                    <h3 class="text-[10px] font-black text-amber-400 uppercase flex items-center gap-2 mb-4"><i data-lucide="target" class="w-3.5 h-3.5"></i> <span id="weekTitleLabel">이번 주</span> 미션 (The Compass)</h3>
+                    <div id="weeklyGoalDisplay" class="space-y-3.5 max-h-48 overflow-y-auto custom-scrollbar pr-2"></div>
+                </div>
+            </div>
+        </section>
 
-            st.write("")
-            with st.expander("✨ 새 사이클 시작 또는 강제 숫자 수정"):
-                st.subheader("🆕 새로운 사이클 시작")
-                new_seed = st.number_input("시작 잔고 입력 ($)", value=10000.0 if account_choice=="진" else 4000.0, step=100.0)
-                if st.button(f"🚀 {account_choice} 계좌 초기화"):
-                    try:
-                        update_status(status_sheet, 0.0, new_seed, 0.0)
-                        st.success("✅ 계좌가 초기화되었습니다. 첫 매수를 진행하세요!")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"초기화 실패: {e}")
-                
-                st.divider()
-                st.subheader("⚙️ 수동 숫자 수정 (계산 꼬였을 때)")
-                c_man1, c_man2, c_man3 = st.columns(3)
-                m_t = c_man1.number_input("T값 수정", value=default_t, step=0.5)
-                m_b = c_man2.number_input("잔금 수정 ($)", value=default_bal, step=10.0)
-                m_a = c_man3.number_input("평단가 수정 ($)", value=default_avg, step=0.01)
-                if st.button("수동 값으로 덮어쓰기"):
-                    update_status(status_sheet, m_t, m_b, m_a)
-                    st.rerun()
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <div class="lg:col-span-5 space-y-6">
+                <div id="reviewBanner" class="hidden bg-gradient-to-r from-rose-600 to-pink-600 rounded-[2rem] p-5 shadow-[0_0_20px_rgba(225,29,72,0.3)] row-animate">
+                    <div class="flex items-center gap-3 mb-4 text-white">
+                        <i data-lucide="bell-ring" class="w-5 h-5 animate-bounce"></i>
+                        <h4 class="text-sm font-black italic">Overdue Cumulative Reviews!</h4>
+                    </div>
+                    <div id="reviewList" class="space-y-3 max-h-48 overflow-y-auto custom-scrollbar pr-2"></div>
+                </div>
 
-        with col2:
-            st.info(f"**💡 아주 심플한 매매 루틴**\n\n**[아침]**\n토스 알림을 보고 간밤에 체결된 내역을 1단계에 적은 뒤 **[저장]**을 누릅니다.\n\n**[밤]**\n토스증권을 켜고 2단계 구역에 떠 있는 수량과 가격대로 예약 주문을 걸고 취침합니다.")
+                <section id="slotSection">
+                    <div class="flex gap-2 p-1.5 bg-slate-900 rounded-[2rem] border border-slate-800 mb-6">
+                        <button onclick="app.setSlot('morning')" id="tab-morning" class="flex-1 py-3.5 rounded-[1.5rem] text-[10px] font-black transition-all slot-active">오전 아웃풋</button>
+                        <button onclick="app.setSlot('afternoon')" id="tab-afternoon" class="flex-1 py-3.5 rounded-[1.5rem] text-[10px] font-black transition-all text-slate-500">오후 인풋</button>
+                        <button onclick="app.setSlot('evening')" id="tab-evening" class="flex-1 py-3.5 rounded-[1.5rem] text-[10px] font-black transition-all text-slate-500">저녁 복습</button>
+                    </div>
+                    <div id="slotContent" class="row-animate min-h-[350px]"></div>
+                </section>
+            </div>
 
-    with tab2:
-        st.subheader(f"📊 {account_choice} 누적 수익금 추이")
-        try:
-            record_df = fetch_records(record_sheet)
-            if not record_df.empty and "수익금" in record_df.columns:
-                chart_df = record_df.dropna(subset=["수익금"]).copy()
-                chart_df["수익금"] = pd.to_numeric(chart_df["수익금"], errors="coerce").fillna(0)
-                chart_df["누적수익금"] = chart_df["수익금"].cumsum()
-                if "종료일" in chart_df.columns:
-                    chart_df["종료일"] = chart_df["종료일"].astype(str)
-                    chart_df.set_index("종료일", inplace=True)
-                st.success(f"🎉 **현재까지 총 누적 수익금: \${chart_df['수익금'].sum():,.2f}**")
-                st.area_chart(chart_df["누적수익금"])
-        except:
-            st.info("기록을 불러오는 중입니다.")
+            <div class="lg:col-span-7">
+                <section id="inventorySection" class="bg-slate-900/40 rounded-[2.5rem] p-7 border border-slate-800 h-fit">
+                    <div class="flex justify-between items-center mb-8">
+                        <h2 class="text-xl font-black text-slate-100 flex items-center gap-3">🎒 교재 인벤토리</h2>
+                        <div class="flex gap-2">
+                            <label class="bg-slate-800 hover:bg-slate-700 text-slate-400 px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-2">
+                                <i data-lucide="camera" class="w-4 h-4"></i> <span class="hidden sm:inline">사진 추출</span>
+                                <input type="file" accept="image/*" class="hidden" onchange="app.handleOcr(event)">
+                            </label>
+                            <button onclick="app.openTextbookModal()" class="text-xs bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg active:scale-95">+ 교재 추가</button>
+                        </div>
+                    </div>
+                    <div id="textbookList" class="grid grid-cols-1 sm:grid-cols-2 gap-5"></div>
+                </section>
+            </div>
+        </div>
 
-        st.divider()
-        st.subheader(f"💾 {account_choice} 사이클 종료 기록")
-        end_date = st.date_input("종료일", date.today())
-        total_invested = st.number_input("총 투입 원금 ($)", min_value=0.0, value=1000.0)
-        final_profit = st.number_input("실현 수익금 ($)", value=100.0)
-        
-        if st.button(f"💾 {account_choice} 최종 결과 저장"):
-            try:
-                append_record(record_sheet, end_date, total_invested, final_profit)
-                st.success("기록 완료!")
-                st.balloons()
-            except Exception as e:
-                st.error(f"오류: {e}")
+        <section class="bg-slate-900/40 rounded-[3rem] border border-slate-800 mt-16 overflow-hidden shadow-2xl">
+            <div class="p-8 border-b border-slate-800 flex justify-between items-center flex-wrap gap-4 bg-slate-900/60">
+                <h2 class="text-xl font-black text-slate-200">📊 학습 데이터 인벤토리</h2>
+                <input type="text" id="searchInput" oninput="app.renderInventory()" placeholder="기록 검색..." class="p-3.5 bg-slate-800 border border-slate-700 rounded-2xl text-xs font-bold text-slate-200 outline-none w-full sm:w-64 focus:ring-2 focus:ring-indigo-500 transition-all">
+            </div>
+            <div id="inventoryContainer" class="divide-y divide-slate-800/50 max-h-[600px] overflow-y-auto custom-scrollbar"></div>
+        </section>
+    </main>
 
-if __name__ == "__main__":
-    main()
+    <div id="settingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-6 hidden bg-slate-950/80 backdrop-blur-md">
+        <div class="bg-slate-900 w-full max-w-sm rounded-[3rem] p-8 border border-slate-800 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar row-animate">
+            <h3 class="text-2xl font-black mb-8 text-indigo-400">⚙️ 사령탑 설정</h3>
+            <div class="space-y-6 mb-10">
+                <div>
+                    <label class="text-[11px] font-black text-slate-500 mb-2 block uppercase tracking-wider">6월 최종 목표 분량</label>
+                    <input type="number" id="setTotalGoal" class="w-full bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="text-[11px] font-black text-slate-500 mb-2 block uppercase tracking-wider">월간 목표 (줄바꿈 구분)</label>
+                    <textarea id="setMonthlyGoal" rows="3" class="w-full bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar"></textarea>
+                </div>
+                <div>
+                    <label class="text-[11px] font-black text-slate-500 mb-2 block uppercase tracking-wider">주간 미션 (줄바꿈 구분)</label>
+                    <textarea id="setWeeklyGoal" rows="3" class="w-full bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar"></textarea>
+                </div>
+                <div>
+                    <label class="text-[11px] font-black text-slate-500 mb-2 block uppercase tracking-wider">약 복용 시간 (오전)</label>
+                    <input type="time" id="setMedTime" class="w-full bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+            <button onclick="app.saveSettings()" class="w-full py-5 bg-indigo-600 rounded-2xl font-black text-white shadow-xl active:scale-95 transition-transform">설정 저장 및 동기화</button>
+            <button onclick="app.closeSettings()" class="w-full py-4 mt-2 text-slate-500 font-bold text-sm">닫기</button>
+        </div>
+    </div>
+
+    <div id="scoreModal" class="fixed inset-0 z-[60] flex items-center justify-center p-6 hidden bg-slate-950/80 backdrop-blur-md">
+        <div class="bg-slate-900 w-full max-w-sm rounded-[3rem] p-10 border border-slate-800 shadow-2xl text-center row-animate">
+            <i data-lucide="gem" class="w-12 h-12 text-amber-400 mx-auto mb-6"></i>
+            <h3 class="text-xl font-black mb-1 text-white">아웃풋 순도 측정</h3>
+            <p id="scoreTargetName" class="text-[10px] text-slate-500 mb-8 font-bold truncate"></p>
+            <input type="number" id="inputScoreValue" placeholder="0 ~ 100" class="w-full bg-slate-800 border-none rounded-3xl p-6 text-4xl font-black text-center text-amber-400 outline-none mb-10 focus:ring-4 focus:ring-amber-500/20">
+            <button onclick="app.saveOutputScore()" class="w-full py-5 bg-amber-500 rounded-2xl font-black text-lg text-amber-950 shadow-xl active:scale-95 transition-transform">점수 기록</button>
+        </div>
+    </div>
+
+    <div id="textbookModal" class="fixed inset-0 z-50 flex items-center justify-center p-6 hidden bg-slate-950/80 backdrop-blur-md">
+        <div class="bg-slate-900 rounded-[3rem] p-8 max-w-xl w-full border border-slate-800 shadow-2xl row-animate">
+            <h2 id="tbModalTitle" class="text-2xl font-black mb-8 text-indigo-400">📖 새 교재 등록</h2>
+            <div class="space-y-5 mb-8">
+                <input type="text" id="tbTitle" placeholder="교재 제목" class="w-full p-4 bg-slate-800 rounded-2xl font-bold text-white outline-none focus:ring-2 focus:ring-indigo-500">
+                <select id="tbSubject" class="w-full p-4 bg-slate-800 rounded-2xl font-bold text-sm text-white outline-none">
+                    <option value="수학">📐 수학</option><option value="국어">📚 국어</option><option value="영어">🔤 영어</option><option value="과탐">🔬 과탐</option><option value="기타">기타</option>
+                </select>
+                <textarea id="tbItemsText" class="w-full h-48 p-4 bg-slate-800 rounded-2xl text-sm leading-relaxed text-white outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar" placeholder="단원명을 한 줄에 하나씩 입력하세요."></textarea>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="app.closeTextbookModal()" class="flex-1 py-4 bg-slate-800 rounded-2xl font-black text-sm text-slate-400 hover:text-white transition-colors">취소</button>
+                <button onclick="app.saveTextbook()" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all">저장하기</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ocrOverlay" class="fixed inset-0 z-[200] bg-slate-950/90 flex flex-col items-center justify-center p-10 hidden">
+        <div class="w-20 h-20 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-8"></div>
+        <h3 class="text-2xl font-black text-white mb-2">이미지 분석 중...</h3>
+        <p class="text-slate-500 font-bold">오타가 있을 수 있으니 추출 후 확인해 주세요.</p>
+    </div>
+
+    <script type="module" src="./js/app.js"></script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(() => console.log('SW Registered'))
+                    .catch(e => console.log('SW Registration Failed', e));
+            });
+        }
+    </script>
+</body>
+</html>
