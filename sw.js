@@ -1,6 +1,7 @@
 // sw.js
 
-const CACHE_NAME = 'med-manager-cache-v2'; // 버전 업!
+
+const CACHE_NAME = 'med-manager-cache-v3'; // 버전 업!
 const urlsToCache = [
   '/',
   '/index.html',
@@ -9,6 +10,7 @@ const urlsToCache = [
   '/js/state.js',
   '/js/database.js',
   '/js/ui.js'
+  '/css/style.css',
   // 만약 css/style.css 등 추가한 파일이 있다면 여기에 쉼표로 구분해서 넣어주세요.
 ];
 
