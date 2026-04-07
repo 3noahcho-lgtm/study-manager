@@ -4,12 +4,15 @@
 
 body { 
     font-family: 'Pretendard', sans-serif; 
-    background-color: #020617; 
-    color: #f1f5f9; 
+    /* 🌟 배경을 밝은 화이트그레이로 변경 */
+    background-color: #f8fafc; 
+    /* 🌟 글씨를 가독성 좋은 어두운 톤으로 변경 */
+    color: #1e293b; 
     -webkit-tap-highlight-color: transparent; 
     scroll-behavior: smooth; 
 }
 
+/* 카드 및 섹션 공통 스타일 (라이트 모드 최적화) */
 .row-animate { 
     animation: fadeIn 0.4s ease-out; 
 }
@@ -19,27 +22,32 @@ body {
     to { opacity: 1; transform: translateY(0); } 
 }
 
+/* 프로그레스 링: 배경 원을 연한 회색으로 */
 .progress-ring { 
     transition: stroke-dashoffset 0.35s; 
     transform: rotate(-90deg); 
     transform-origin: 50% 50%; 
 }
 
+/* 🌟 스크롤바: 밝은 테마에 맞게 연하게 변경 */
 .custom-scrollbar::-webkit-scrollbar { 
     width: 6px; 
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb { 
-    background-color: #334155; 
+    background-color: #cbd5e1; /* 연한 그레이 */
     border-radius: 20px; 
 }
 
+/* 🌟 활성화된 탭: 조금 더 부드러운 그림자와 선명한 보라색 */
 .slot-active { 
     background-color: #4f46e5 !important; 
     color: white !important; 
-    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4); 
+    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3); 
+    border: none !important;
 }
 
+/* 폭죽 효과 */
 .confetti { 
     position: absolute; 
     pointer-events: none; 
@@ -49,4 +57,11 @@ body {
 
 @keyframes fall { 
     to { transform: translateY(100vh) rotate(720deg); opacity: 0; } 
+}
+
+/* 🌟 입력창 포커스 시 라이트 모드 가독성 향상 */
+input:focus, textarea:focus {
+    background-color: #ffffff !important;
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
 }
