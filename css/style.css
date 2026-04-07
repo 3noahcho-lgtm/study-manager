@@ -16,39 +16,32 @@ body {
     color: var(--text-main);
     -webkit-tap-highlight-color: transparent; 
     scroll-behavior: smooth;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
 }
 
-/* 🌟 카드 스타일: 배경보다 더 밝은 흰색 + 아주 부드러운 그림자 */
+/* 🌟 애플 스타일 글래스/카드 디자인 */
 .glass-card {
     background: var(--card-bg);
     border: 1px solid var(--border);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.03), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
     border-radius: 24px;
 }
 
-/* 애니메이션 */
-.row-animate { animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+.row-animate { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
-/* 스크롤바 */
+.progress-ring { transition: stroke-dashoffset 0.5s ease-in-out; transform: rotate(-90deg); transform-origin: 50% 50%; }
+
 .custom-scrollbar::-webkit-scrollbar { width: 5px; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #E2E8F0; border-radius: 10px; }
 
-/* 🌟 슬롯 탭 디자인 변경 */
-.slot-tab {
-    padding: 12px 20px;
-    border-radius: 14px;
-    font-weight: 700;
-    font-size: 13px;
-    transition: all 0.2s;
-    color: var(--text-muted);
-}
+.slot-tab { padding: 12px 20px; border-radius: 14px; font-weight: 700; font-size: 12px; transition: all 0.25s; color: var(--text-muted); }
 .slot-active { 
-    background: var(--primary) !important;
-    color: white !important;
+    background: var(--primary) !important; color: white !important;
     box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.4);
 }
 
-/* 프로그레스 바 */
 .progress-container { background: #F1F5F9; border-radius: 99px; overflow: hidden; }
+
+.confetti { position: absolute; pointer-events: none; animation: fall 3s linear forwards; z-index: 100; }
+@keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
