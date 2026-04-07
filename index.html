@@ -6,9 +6,9 @@
     <title>의대 합격 통합 매니저 (Final Pro)</title>
     
     <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="의대매니저">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2936/2936735.png">
     
@@ -20,26 +20,26 @@
 </head>
 <body class="min-h-screen pb-24">
 
-    <div id="authOverlay" class="fixed inset-0 bg-slate-950 z-[100] flex flex-col items-center justify-center gap-4 text-center">
-        <div class="w-12 h-12 border-4 border-slate-800 border-t-indigo-500 rounded-full animate-spin"></div>
-        <p id="loadingText" class="text-indigo-400 font-black animate-pulse">데이터베이스 연결 중...</p>
-        <button id="loginBtn" onclick="app.login()" class="hidden mt-4 bg-white text-slate-900 px-6 py-3 rounded-2xl font-black text-sm shadow-xl transition-transform active:scale-95 flex items-center gap-2">
+    <div id="authOverlay" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center gap-4 text-center">
+        <div class="w-12 h-12 border-4 border-slate-100 border-t-indigo-500 rounded-full animate-spin"></div>
+        <p id="loadingText" class="text-indigo-600 font-black animate-pulse">데이터베이스 연결 중...</p>
+        <button id="loginBtn" onclick="app.login()" class="hidden mt-4 bg-slate-900 text-white px-6 py-3 rounded-2xl font-black text-sm shadow-xl transition-transform active:scale-95 flex items-center gap-2">
             <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
             구글 계정으로 로그인
         </button>
     </div>
 
-    <nav class="fixed top-0 w-full bg-slate-900/80 backdrop-blur-xl border-b border-slate-800 z-40 px-6 py-4 flex justify-between items-center">
+    <nav class="fixed top-0 w-full bg-white/80 backdrop-blur-xl border-b border-slate-200 z-40 px-6 py-4 flex justify-between items-center">
         <div class="flex items-center gap-3">
             <div id="statusDot" class="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span id="syncStatus" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Connected</span>
+            <span id="syncStatus" class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Connected</span>
         </div>
-        <div id="medicationAlert" class="hidden text-[10px] font-black bg-indigo-600 text-white px-3 py-1 rounded-full animate-bounce shadow-[0_0_15px_rgba(79,70,229,0.5)]">
+        <div id="medicationAlert" class="hidden text-[10px] font-black bg-indigo-600 text-white px-3 py-1 rounded-full animate-bounce shadow-[0_0_15px_rgba(79,70,229,0.3)]">
             💊 약효 피크 타임! 최고 난도 과제 몰입
         </div>
         <div class="flex items-center gap-4">
-            <button onclick="app.scrollToInventory()" class="text-slate-400 hover:text-amber-400 transition-colors"><i data-lucide="backpack" class="w-5 h-5"></i></button>
-            <button onclick="app.openSettings()" class="text-slate-400 hover:text-white transition-colors"><i data-lucide="settings" class="w-5 h-5"></i></button>
+            <button onclick="app.scrollToInventory()" class="text-slate-400 hover:text-amber-500 transition-colors"><i data-lucide="backpack" class="w-5 h-5"></i></button>
+            <button onclick="app.openSettings()" class="text-slate-400 hover:text-indigo-600 transition-colors"><i data-lucide="settings" class="w-5 h-5"></i></button>
         </div>
     </nav>
 
@@ -48,53 +48,53 @@
             <div class="flex justify-center mb-6">
                 <div class="relative inline-flex items-center justify-center">
                     <svg class="w-40 h-40">
-                        <circle class="text-slate-900" stroke-width="8" stroke="currentColor" fill="transparent" r="74" cx="80" cy="80"/>
+                        <circle class="text-slate-100" stroke-width="8" stroke="currentColor" fill="transparent" r="74" cx="80" cy="80"/>
                         <circle id="mainProgressCircle" class="text-indigo-500 progress-ring" stroke-width="8" stroke-dasharray="464.7" stroke-dashoffset="464.7" stroke-linecap="round" stroke="currentColor" fill="transparent" r="74" cx="80" cy="80"/>
                     </svg>
                     <div class="absolute flex flex-col items-center">
-                        <span id="mainPercent" class="text-4xl font-black italic tracking-tighter">0%</span>
-                        <span class="text-[8px] font-bold text-slate-500 uppercase mt-1">To Victory</span>
+                        <span id="mainPercent" class="text-4xl font-black italic tracking-tighter text-slate-800">0%</span>
+                        <span class="text-[8px] font-bold text-slate-400 uppercase mt-1">To Victory</span>
                     </div>
                 </div>
             </div>
-            <div class="bg-slate-900/50 border border-slate-800 p-5 rounded-[2.5rem] shadow-xl">
+            <div class="bg-white border border-slate-200 p-5 rounded-[2.5rem] shadow-sm">
                 <div class="flex justify-between items-end mb-3">
                     <div class="flex items-center gap-2">
-                        <span class="bg-amber-400 text-amber-950 text-[10px] font-black px-2.5 py-1 rounded-xl">Lv.<span id="userLevel">1</span></span>
-                        <span id="userTitle" class="text-xs font-black text-slate-200">초등학교 1학년 🎒</span>
+                        <span class="bg-amber-100 text-amber-700 text-[10px] font-black px-2.5 py-1 rounded-xl">Lv.<span id="userLevel">1</span></span>
+                        <span id="userTitle" class="text-xs font-black text-slate-600">초등학교 1학년 🎒</span>
                     </div>
                     <div class="flex flex-col items-end gap-1.5">
-                        <div class="flex items-center gap-1.5 bg-indigo-500/10 px-2.5 py-1 rounded-xl">
-                            <span class="text-[8px] font-bold text-indigo-300">평균 순도</span>
-                            <span class="text-[10px] font-black text-amber-300" id="avgPurityText">0%</span>
+                        <div class="flex items-center gap-1.5 bg-indigo-50 px-2.5 py-1 rounded-xl">
+                            <span class="text-[8px] font-bold text-indigo-400">평균 순도</span>
+                            <span class="text-[10px] font-black text-amber-600" id="avgPurityText">0%</span>
                         </div>
-                        <span class="text-[9px] font-bold text-slate-500"><span id="expText">0 / 100</span> EXP</span>
+                        <span class="text-[9px] font-bold text-slate-400"><span id="expText">0 / 100</span> EXP</span>
                     </div>
                 </div>
-                <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden shadow-inner">
-                    <div id="expBar" class="bg-gradient-to-r from-amber-300 via-amber-500 to-indigo-500 h-full transition-all duration-1000" style="width: 0%"></div>
+                <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div id="expBar" class="bg-gradient-to-r from-amber-400 via-amber-500 to-indigo-600 h-full transition-all duration-1000" style="width: 0%"></div>
                 </div>
             </div>
         </header>
 
         <section class="mb-10 w-full">
-            <div class="bg-slate-900/60 border border-slate-800 rounded-[2.5rem] p-7 flex flex-col sm:flex-row gap-8 relative overflow-hidden shadow-lg row-animate">
+            <div class="bg-white border border-slate-200 rounded-[2.5rem] p-7 flex flex-col sm:flex-row gap-8 relative overflow-hidden shadow-sm row-animate">
                 <div class="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/5 rounded-full blur-3xl"></div>
-                <div class="flex-1 w-full sm:border-r border-slate-800/50 pr-0 sm:pr-6 pb-6 sm:pb-0 border-b sm:border-b-0">
-                    <h3 class="text-[10px] font-black text-indigo-400 uppercase flex items-center gap-2 mb-4"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> <span id="monthTitleLabel">이번 달</span> 목표 (The Map)</h3>
-                    <div id="monthlyGoalDisplay" class="space-y-3.5 max-h-48 overflow-y-auto custom-scrollbar pr-2"></div>
+                <div class="flex-1 w-full sm:border-r border-slate-100 pr-0 sm:pr-6 pb-6 sm:pb-0 border-b sm:border-b-0">
+                    <h3 class="text-[10px] font-black text-indigo-600 uppercase flex items-center gap-2 mb-4"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> <span id="monthTitleLabel">이번 달</span> 목표</h3>
+                    <div id="monthlyGoalDisplay" class="space-y-3.5 max-h-48 overflow-y-auto custom-scrollbar pr-2 text-slate-700"></div>
                 </div>
                 <div class="flex-1 w-full pl-0 sm:pl-4 z-10">
-                    <h3 class="text-[10px] font-black text-amber-400 uppercase flex items-center gap-2 mb-4"><i data-lucide="target" class="w-3.5 h-3.5"></i> <span id="weekTitleLabel">이번 주</span> 미션 (The Compass)</h3>
-                    <div id="weeklyGoalDisplay" class="space-y-3.5 max-h-48 overflow-y-auto custom-scrollbar pr-2"></div>
+                    <h3 class="text-[10px] font-black text-amber-600 uppercase flex items-center gap-2 mb-4"><i data-lucide="target" class="w-3.5 h-3.5"></i> <span id="weekTitleLabel">이번 주</span> 미션</h3>
+                    <div id="weeklyGoalDisplay" class="space-y-3.5 max-h-48 overflow-y-auto custom-scrollbar pr-2 text-slate-700"></div>
                 </div>
             </div>
         </section>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
             <div class="lg:col-span-5 space-y-6">
-                <div id="reviewBanner" class="hidden bg-gradient-to-r from-rose-600 to-pink-600 rounded-[2rem] p-5 shadow-[0_0_20px_rgba(225,29,72,0.3)] row-animate">
-                    <div class="flex items-center gap-3 mb-4 text-white">
+                <div id="reviewBanner" class="hidden bg-rose-50 border border-rose-100 rounded-[2rem] p-5 shadow-sm row-animate">
+                    <div class="flex items-center gap-3 mb-4 text-rose-600">
                         <i data-lucide="bell-ring" class="w-5 h-5 animate-bounce"></i>
                         <h4 class="text-sm font-black italic">Overdue Cumulative Reviews!</h4>
                     </div>
@@ -102,7 +102,7 @@
                 </div>
 
                 <section id="slotSection">
-                    <div class="flex gap-2 p-1.5 bg-slate-900 rounded-[2rem] border border-slate-800 mb-6">
+                    <div class="flex gap-2 p-1.5 bg-slate-100 rounded-[2rem] border border-slate-200 mb-6">
                         <button onclick="app.setSlot('morning')" id="tab-morning" class="flex-1 py-3.5 rounded-[1.5rem] text-[10px] font-black transition-all slot-active">오전 아웃풋</button>
                         <button onclick="app.setSlot('afternoon')" id="tab-afternoon" class="flex-1 py-3.5 rounded-[1.5rem] text-[10px] font-black transition-all text-slate-500">오후 인풋</button>
                         <button onclick="app.setSlot('evening')" id="tab-evening" class="flex-1 py-3.5 rounded-[1.5rem] text-[10px] font-black transition-all text-slate-500">저녁 복습</button>
@@ -112,15 +112,15 @@
             </div>
 
             <div class="lg:col-span-7">
-                <section id="inventorySection" class="bg-slate-900/40 rounded-[2.5rem] p-7 border border-slate-800 h-fit">
+                <section id="inventorySection" class="bg-white rounded-[2.5rem] p-7 border border-slate-200 h-fit shadow-sm">
                     <div class="flex justify-between items-center mb-8">
-                        <h2 class="text-xl font-black text-slate-100 flex items-center gap-3">🎒 교재 인벤토리</h2>
+                        <h2 class="text-xl font-black text-slate-800 flex items-center gap-3">🎒 교재 인벤토리</h2>
                         <div class="flex gap-2">
-                            <label class="bg-slate-800 hover:bg-slate-700 text-slate-400 px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-2">
+                            <label class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-2">
                                 <i data-lucide="camera" class="w-4 h-4"></i> <span class="hidden sm:inline">사진 추출</span>
                                 <input type="file" accept="image/*" class="hidden" onchange="app.handleOcr(event)">
                             </label>
-                            <button onclick="app.openTextbookModal()" class="text-xs bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg active:scale-95">+ 교재 추가</button>
+                            <button onclick="app.openTextbookModal()" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-md active:scale-95">+ 교재 추가</button>
                         </div>
                     </div>
                     <div id="textbookList" class="grid grid-cols-1 sm:grid-cols-2 gap-5"></div>
@@ -128,85 +128,84 @@
             </div>
         </div>
 
-        <section class="bg-slate-900/40 rounded-[3rem] border border-slate-800 mt-16 overflow-hidden shadow-2xl">
-            <div class="p-8 border-b border-slate-800 flex justify-between items-center flex-wrap gap-4 bg-slate-900/60">
-                <h2 class="text-xl font-black text-slate-200">📊 학습 데이터 인벤토리</h2>
-                <input type="text" id="searchInput" oninput="app.renderInventory()" placeholder="기록 검색..." class="p-3.5 bg-slate-800 border border-slate-700 rounded-2xl text-xs font-bold text-slate-200 outline-none w-full sm:w-64 focus:ring-2 focus:ring-indigo-500 transition-all">
+        <section class="bg-white rounded-[3rem] border border-slate-200 mt-16 overflow-hidden shadow-sm">
+            <div class="p-8 border-b border-slate-100 flex justify-between items-center flex-wrap gap-4 bg-slate-50/50">
+                <h2 class="text-xl font-black text-slate-800">📊 학습 데이터 인벤토리</h2>
+                <input type="text" id="searchInput" oninput="app.renderInventory()" placeholder="기록 검색..." class="p-3.5 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 outline-none w-full sm:w-64 focus:ring-2 focus:ring-indigo-500 transition-all shadow-inner">
             </div>
-            <div id="inventoryContainer" class="divide-y divide-slate-800/50 max-h-[600px] overflow-y-auto custom-scrollbar"></div>
+            <div id="inventoryContainer" class="divide-y divide-slate-100 max-h-[600px] overflow-y-auto custom-scrollbar"></div>
         </section>
     </main>
 
-    <div id="settingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-6 hidden bg-slate-950/80 backdrop-blur-md">
-        <div class="bg-slate-900 w-full max-w-sm rounded-[3rem] p-8 border border-slate-800 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar row-animate">
-            <h3 class="text-2xl font-black mb-8 text-indigo-400">⚙️ 사령탑 설정</h3>
+    <div id="settingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-6 hidden bg-slate-900/40 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-[3rem] p-8 border border-slate-200 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar row-animate">
+            <h3 class="text-2xl font-black mb-8 text-indigo-600">⚙️ 사령탑 설정</h3>
             <div class="space-y-6 mb-10">
                 <div>
-                    <label class="text-[11px] font-black text-slate-500 mb-2 block uppercase tracking-wider">6월 최종 목표 분량</label>
-                    <input type="number" id="setTotalGoal" class="w-full bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-indigo-500">
+                    <label class="text-[11px] font-black text-slate-400 mb-2 block uppercase tracking-wider">6월 최종 목표 분량</label>
+                    <input type="number" id="setTotalGoal" class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div>
-                    <label class="text-[11px] font-black text-slate-500 mb-2 block uppercase tracking-wider">월간 목표 (줄바꿈 구분)</label>
-                    <textarea id="setMonthlyGoal" rows="3" class="w-full bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar"></textarea>
+                    <label class="text-[11px] font-black text-slate-400 mb-2 block uppercase tracking-wider">월간 목표 (줄바꿈 구분)</label>
+                    <textarea id="setMonthlyGoal" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar"></textarea>
                 </div>
                 <div>
-                    <label class="text-[11px] font-black text-slate-500 mb-2 block uppercase tracking-wider">주간 미션 (줄바꿈 구분)</label>
-                    <textarea id="setWeeklyGoal" rows="3" class="w-full bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar"></textarea>
+                    <label class="text-[11px] font-black text-slate-400 mb-2 block uppercase tracking-wider">주간 미션 (줄바꿈 구분)</label>
+                    <textarea id="setWeeklyGoal" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar"></textarea>
                 </div>
                 <div>
-                    <label class="text-[11px] font-black text-slate-500 mb-2 block uppercase tracking-wider">약 복용 시간 (오전)</label>
-                    <input type="time" id="setMedTime" class="w-full bg-slate-800 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-indigo-500">
+                    <label class="text-[11px] font-black text-slate-400 mb-2 block uppercase tracking-wider">약 복용 시간 (오전)</label>
+                    <input type="time" id="setMedTime" class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
             </div>
             <button onclick="app.saveSettings()" class="w-full py-5 bg-indigo-600 rounded-2xl font-black text-white shadow-xl active:scale-95 transition-transform">설정 저장 및 동기화</button>
-            <button onclick="app.closeSettings()" class="w-full py-4 mt-2 text-slate-500 font-bold text-sm">닫기</button>
+            <button onclick="app.closeSettings()" class="w-full py-4 mt-2 text-slate-400 font-bold text-sm">닫기</button>
         </div>
     </div>
 
-    <div id="scoreModal" class="fixed inset-0 z-[60] flex items-center justify-center p-6 hidden bg-slate-950/80 backdrop-blur-md">
-        <div class="bg-slate-900 w-full max-w-sm rounded-[3rem] p-10 border border-slate-800 shadow-2xl text-center row-animate">
-            <i data-lucide="gem" class="w-12 h-12 text-amber-400 mx-auto mb-6"></i>
-            <h3 class="text-xl font-black mb-1 text-white">아웃풋 순도 측정</h3>
-            <p id="scoreTargetName" class="text-[10px] text-slate-500 mb-8 font-bold truncate"></p>
-            <input type="number" id="inputScoreValue" placeholder="0 ~ 100" class="w-full bg-slate-800 border-none rounded-3xl p-6 text-4xl font-black text-center text-amber-400 outline-none mb-10 focus:ring-4 focus:ring-amber-500/20">
-            <button onclick="app.saveOutputScore()" class="w-full py-5 bg-amber-500 rounded-2xl font-black text-lg text-amber-950 shadow-xl active:scale-95 transition-transform">점수 기록</button>
+    <div id="scoreModal" class="fixed inset-0 z-[60] flex items-center justify-center p-6 hidden bg-slate-900/40 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-[3rem] p-10 border border-slate-200 shadow-2xl text-center row-animate">
+            <i data-lucide="gem" class="w-12 h-12 text-amber-500 mx-auto mb-6"></i>
+            <h3 class="text-xl font-black mb-1 text-slate-800">아웃풋 순도 측정</h3>
+            <p id="scoreTargetName" class="text-[10px] text-slate-400 mb-8 font-bold truncate"></p>
+            <input type="number" id="inputScoreValue" placeholder="0 ~ 100" class="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl p-6 text-4xl font-black text-center text-amber-600 outline-none mb-10 focus:ring-4 focus:ring-amber-500/20">
+            <button onclick="app.saveOutputScore()" class="w-full py-5 bg-amber-500 rounded-2xl font-black text-lg text-white shadow-xl active:scale-95 transition-transform">점수 기록</button>
         </div>
     </div>
 
-    <div id="textbookModal" class="fixed inset-0 z-50 flex items-center justify-center p-6 hidden bg-slate-950/80 backdrop-blur-md">
-        <div class="bg-slate-900 rounded-[3rem] p-8 max-w-xl w-full border border-slate-800 shadow-2xl row-animate">
-            <h2 id="tbModalTitle" class="text-2xl font-black mb-8 text-indigo-400">📖 새 교재 등록</h2>
+    <div id="textbookModal" class="fixed inset-0 z-50 flex items-center justify-center p-6 hidden bg-slate-900/40 backdrop-blur-sm">
+        <div class="bg-white rounded-[3rem] p-8 max-w-xl w-full border border-slate-200 shadow-2xl row-animate">
+            <h2 id="tbModalTitle" class="text-2xl font-black mb-8 text-indigo-600">📖 새 교재 등록</h2>
             <div class="space-y-5 mb-8">
-                <input type="text" id="tbTitle" placeholder="교재 제목" class="w-full p-4 bg-slate-800 rounded-2xl font-bold text-white outline-none focus:ring-2 focus:ring-indigo-500">
-                <select id="tbSubject" class="w-full p-4 bg-slate-800 rounded-2xl font-bold text-sm text-white outline-none">
+                <input type="text" id="tbTitle" placeholder="교재 제목" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500">
+                <select id="tbSubject" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm text-slate-800 outline-none">
                     <option value="수학">📐 수학</option><option value="국어">📚 국어</option><option value="영어">🔤 영어</option><option value="과탐">🔬 과탐</option><option value="기타">기타</option>
                 </select>
-                <textarea id="tbItemsText" class="w-full h-48 p-4 bg-slate-800 rounded-2xl text-sm leading-relaxed text-white outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar" placeholder="단원명을 한 줄에 하나씩 입력하세요."></textarea>
+                <textarea id="tbItemsText" class="w-full h-48 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm leading-relaxed text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar" placeholder="단원명을 한 줄에 하나씩 입력하세요."></textarea>
             </div>
             <div class="flex gap-4">
-                <button onclick="app.closeTextbookModal()" class="flex-1 py-4 bg-slate-800 rounded-2xl font-black text-sm text-slate-400 hover:text-white transition-colors">취소</button>
+                <button onclick="app.closeTextbookModal()" class="flex-1 py-4 bg-slate-100 rounded-2xl font-black text-sm text-slate-500 hover:bg-slate-200 transition-colors">취소</button>
                 <button onclick="app.saveTextbook()" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all">저장하기</button>
             </div>
         </div>
     </div>
 
-    <div id="ocrOverlay" class="fixed inset-0 z-[200] bg-slate-950/90 flex flex-col items-center justify-center p-10 hidden">
-        <div class="w-20 h-20 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-8"></div>
-        <h3 class="text-2xl font-black text-white mb-2">이미지 분석 중...</h3>
+    <div id="ocrOverlay" class="fixed inset-0 z-[200] bg-white/90 flex flex-col items-center justify-center p-10 hidden">
+        <div class="w-20 h-20 border-4 border-indigo-100 border-t-indigo-500 rounded-full animate-spin mb-8"></div>
+        <h3 class="text-2xl font-black text-slate-800 mb-2">이미지 분석 중...</h3>
         <p class="text-slate-500 font-bold">오타가 있을 수 있으니 추출 후 확인해 주세요.</p>
     </div>
 
-<script type="module" src="./js/app.js?update=final_01"></script>
+    <script type="module" src="./js/app.js?update=final_01"></script>
 
-<script>
-    // 2. 서비스 워커가 옛날 파일을 붙들고 있지 못하게 강제 해제하는 코드를 추가합니다.
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-            for(let registration of registrations) {
-                registration.unregister(); 
-            }
-        });
-    }
-</script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister(); 
+                }
+            });
+        }
+    </script>
 </body>
 </html>
