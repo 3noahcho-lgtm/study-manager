@@ -37,19 +37,23 @@ class App {
         window.app = this;
     }
 
-    initAuth() {
+initAuth() {
         onAuthStateChanged(this.auth, (user) => {
             if (user) {
                 document.getElementById('authOverlay').classList.add('hidden');
                 this.db.setUserId(user.uid);
                 this.db.syncData(this.state); 
+                
+                // 🌟 추가된 코드: 좌측 상단 'Connected' 글씨 대신 로그인된 이메일을 보여줍니다!
+                document.getElementById('syncStatus').innerText = user.email;
+                document.getElementById('syncStatus').classList.remove('uppercase'); // 대문자 변환 해제
+                
             } else {
                 document.getElementById('loadingText').innerText = "기기 간 연동을 위해 구글 로그인이 필요합니다.";
                 document.getElementById('loginBtn').classList.remove('hidden');
             }
         });
     }
-
 async login() {
         const provider = new GoogleAuthProvider();
         
