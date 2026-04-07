@@ -1,67 +1,54 @@
 /* css/style.css */
-
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+:root {
+    --bg-main: #F8FAFC;
+    --card-bg: #FFFFFF;
+    --primary: #6366F1;
+    --text-main: #1E293B;
+    --text-muted: #64748B;
+    --border: #F1F5F9;
+}
 
 body { 
     font-family: 'Pretendard', sans-serif; 
-    /* 🌟 배경을 밝은 화이트그레이로 변경 */
-    background-color: #f8fafc; 
-    /* 🌟 글씨를 가독성 좋은 어두운 톤으로 변경 */
-    color: #1e293b; 
+    background-color: var(--bg-main); 
+    color: var(--text-main);
     -webkit-tap-highlight-color: transparent; 
-    scroll-behavior: smooth; 
+    scroll-behavior: smooth;
+    letter-spacing: -0.02em;
 }
 
-/* 카드 및 섹션 공통 스타일 (라이트 모드 최적화) */
-.row-animate { 
-    animation: fadeIn 0.4s ease-out; 
+/* 🌟 카드 스타일: 배경보다 더 밝은 흰색 + 아주 부드러운 그림자 */
+.glass-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.03), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+    border-radius: 24px;
 }
 
-@keyframes fadeIn { 
-    from { opacity: 0; transform: translateY(10px); } 
-    to { opacity: 1; transform: translateY(0); } 
-}
+/* 애니메이션 */
+.row-animate { animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
-/* 프로그레스 링: 배경 원을 연한 회색으로 */
-.progress-ring { 
-    transition: stroke-dashoffset 0.35s; 
-    transform: rotate(-90deg); 
-    transform-origin: 50% 50%; 
-}
+/* 스크롤바 */
+.custom-scrollbar::-webkit-scrollbar { width: 5px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background-color: #E2E8F0; border-radius: 10px; }
 
-/* 🌟 스크롤바: 밝은 테마에 맞게 연하게 변경 */
-.custom-scrollbar::-webkit-scrollbar { 
-    width: 6px; 
+/* 🌟 슬롯 탭 디자인 변경 */
+.slot-tab {
+    padding: 12px 20px;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 13px;
+    transition: all 0.2s;
+    color: var(--text-muted);
 }
-
-.custom-scrollbar::-webkit-scrollbar-thumb { 
-    background-color: #cbd5e1; /* 연한 그레이 */
-    border-radius: 20px; 
-}
-
-/* 🌟 활성화된 탭: 조금 더 부드러운 그림자와 선명한 보라색 */
 .slot-active { 
-    background-color: #4f46e5 !important; 
-    color: white !important; 
-    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3); 
-    border: none !important;
+    background: var(--primary) !important;
+    color: white !important;
+    box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.4);
 }
 
-/* 폭죽 효과 */
-.confetti { 
-    position: absolute; 
-    pointer-events: none; 
-    animation: fall 3s linear forwards; 
-    z-index: 100; 
-}
-
-@keyframes fall { 
-    to { transform: translateY(100vh) rotate(720deg); opacity: 0; } 
-}
-
-/* 🌟 입력창 포커스 시 라이트 모드 가독성 향상 */
-input:focus, textarea:focus {
-    background-color: #ffffff !important;
-    border-color: #6366f1 !important;
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-}
+/* 프로그레스 바 */
+.progress-container { background: #F1F5F9; border-radius: 99px; overflow: hidden; }
