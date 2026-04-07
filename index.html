@@ -196,14 +196,14 @@
         <p class="text-slate-500 font-bold">오타가 있을 수 있으니 추출 후 확인해 주세요.</p>
     </div>
 
-   <script type="module" src="./js/app.js?v=1.0.1"></script>
-
+<script type="module" src="./js/app.js?update=final_01"></script>
 
 <script>
+    // 2. 서비스 워커가 옛날 파일을 붙들고 있지 못하게 강제 해제하는 코드를 추가합니다.
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
             for(let registration of registrations) {
-                registration.unregister(); // 기존 서비스 워커 강제 해제
+                registration.unregister(); 
             }
         });
     }
